@@ -11,7 +11,7 @@ Runbook Relay is a deterministic incident-response control room where a human an
 
 ## Review it in three minutes
 
-1. Open the live demo and check the WebMCP support indicator.
+1. On desktop, open the live demo in ChatGPT's built-in Browser and check the WebMCP support indicator.
 2. If native WebMCP is available, follow the five copyable prompts. Otherwise click **Run the blocked-action proof**.
 3. Inspect the blocked execution receipt and decision log.
 4. Approve the staged change in the page, execute it, and verify recovery.
@@ -67,9 +67,11 @@ This negative test is intentional: the agent can prepare a consequential action,
 
 ### Browser compatibility
 
-- **Native WebMCP:** use the ChatGPT Work browser or a supported Chrome build.
-- **Local Chrome testing:** enable `chrome://flags/#enable-webmcp-testing` in Chrome 149+ and relaunch.
-- **Any other browser:** use the built-in Agent simulator to exercise the same application handlers.
+- **Recommended native path:** use the latest ChatGPT desktop app, start a ChatGPT Work or Codex chat with GPT-5.6 Sol or Terra, open the built-in Browser, and enable **Site tools** in **Settings → Browser → Permissions**. No separate MCP server or Chrome extension is required for this path.
+- **Desktop Chrome developer path:** use Chrome 149+, enable `chrome://flags/#enable-webmcp-testing`, and relaunch. To let ChatGPT work with your regular Chrome profile, install the ChatGPT browser extension through **Settings → Computer Use** and select `@Chrome`.
+- **Mobile and unsupported browsers:** the page and browser-independent simulator work, but they do not prove native WebMCP discovery. Native Site tools testing requires the ChatGPT desktop app or a compatible desktop Chrome setup.
+
+After setup, reload the page. Confirm **Native WebMCP active · 5 tools registered** in the page and **Site tools** in the browser address bar before using the prompts.
 
 The simulator is clearly labeled and does not claim to prove native browser discovery. Both native and simulated calls create visible tool receipts containing the tool name, caller, input, policy outcome, structured result, and timestamp.
 
