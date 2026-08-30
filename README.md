@@ -2,9 +2,28 @@
 
 Runbook Relay is a deterministic incident-response control room where a human and an AI agent share the same evidence, simulations, approval state, and audit log. It demonstrates how [WebMCP](https://github.com/webmachinelearning/webmcp) can make a complex operational interface directly usable by an agent without bypassing the human operator.
 
-**[Open the live app](https://runbook-relay-webmcp.andreas-nissen.chatgpt.site)**
+[![CI](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-77e6ae.svg)](LICENSE)
+
+**[Open the live demo](https://runbook-relay-webmcp.andreas-nissen.chatgpt.site)** · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md)
 
 > This independent portfolio project was inspired by OpenAI's [WebMCP Challenge](https://openai.com/webmcp-challenge/). It is not a challenge submission and is not affiliated with or endorsed by OpenAI.
+
+## Review it in three minutes
+
+1. Open the live demo and check the WebMCP support indicator.
+2. If native WebMCP is available, follow the five copyable prompts. Otherwise click **Run the blocked-action proof**.
+3. Inspect the blocked execution receipt and decision log.
+4. Approve the staged change in the page, execute it, and verify recovery.
+5. Read the [architecture](docs/architecture.md), [threat model](docs/threat-model.md), and automated [contract tests](tests/app-contract.test.mjs).
+
+| Evidence | What the reviewer can verify |
+|---|---|
+| Five bounded tools | Read, compare, stage, execute, and reset are separate contracts |
+| Human-only approval | No approval tool exists; pre-approval execution fails closed |
+| Observable behavior | Inputs, results, caller, outcome, and audit events remain visible |
+| Deterministic fixture | The full scenario is repeatable and changes no external system |
+| Automated gate | CI lints, builds, renders the worker, and checks the safety contract |
 
 ## Why this is a WebMCP fit
 
@@ -76,14 +95,22 @@ npm test
 
 ## Architecture and boundaries
 
+The [architecture note](docs/architecture.md) explains the shared-state control loop and the production boundary. The [threat model](docs/threat-model.md) maps the demonstrated risks to controls and states what the project intentionally does not claim.
+
 - React 19, TypeScript, Vinext, and Cloudflare-compatible output
 - client-side deterministic incident model; no credentials or external systems
 - one state model for human controls, native WebMCP calls, and the explicitly labeled simulator
 - explicit read, stage, approve, execute, and verify phases
-- guided copyable prompts, environment diagnostics, tool receipts, and an on-page tool catalog
+- guided copyable prompts, one-click fallback proof, environment diagnostics, tool receipts, and an on-page tool catalog
 - MIT licensed
 
 This is a reference application, not a production operations console. A real implementation should enforce authorization and approvals server-side, bind actions to scoped identities, persist tamper-evident audit records, apply idempotency keys, and validate live infrastructure state before execution.
+
+## Ownership and AI assistance
+
+Andreas Nissen owns the project intent, architecture, requirements, evaluation criteria, risk decisions, and release decisions, and reviews every merged change. Codex assisted with implementation and documentation. AI assistance is treated as an engineering tool, not as an independent human reviewer.
+
+See [SECURITY.md](SECURITY.md) for responsible reporting guidance.
 
 ## References
 
