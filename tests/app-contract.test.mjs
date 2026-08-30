@@ -35,6 +35,13 @@ test("ships an observable guided test experience", () => {
   assert.match(source, /recordReceipt\(tool, "simulator"/);
 });
 
+test("keeps creator and source attribution visible", () => {
+  assert.match(source, /Built by/);
+  assert.match(source, /https:\/\/github\.com\/Andreasniss/);
+  assert.match(source, /https:\/\/github\.com\/Andreasniss\/runbook-relay-webmcp/);
+  assert.match(source, /Source on GitHub/);
+});
+
 test("renders the production application", async () => {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);

@@ -4,6 +4,8 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Runbook Relay — Governed incident response with WebMCP",
   description: "A human-guided incident response control room demonstrating scoped, visible, and auditable WebMCP tools.",
+  authors: [{ name: "Andreas Nissen", url: "https://github.com/Andreasniss" }],
+  creator: "Andreas Nissen",
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
 };
 

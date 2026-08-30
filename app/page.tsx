@@ -358,7 +358,14 @@ export default function Home() {
         </details>
       </section>
 
-      <footer><span><ShieldCheck size={14} /> Agent actions are scoped, visible, and auditable.</span><span>Deterministic demo · no production systems are changed</span></footer>
+      <footer>
+        <span><ShieldCheck size={14} /> Agent actions are scoped, visible, and auditable.</span>
+        <span className="site-attribution">
+          Built by <a href="https://github.com/Andreasniss" target="_blank" rel="noreferrer">Andreas Nissen</a>
+          <span aria-hidden="true">·</span>
+          <a href="https://github.com/Andreasniss/runbook-relay-webmcp" target="_blank" rel="noreferrer">Source on GitHub</a>
+        </span>
+      </footer>
     </main>
   );
 }
