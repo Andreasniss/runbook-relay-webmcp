@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Activity, AlertTriangle, Bot, Check, CheckCircle2, ChevronDown, ChevronRight,
-  CircleDot, Copy, FlaskConical, Gauge, GitPullRequestArrow, ListTree, Play,
-  RotateCcw, ServerCog, ShieldCheck, Sparkles, TerminalSquare, UserCheck, Wrench,
+  Activity, AlertTriangle, BookOpen, Bot, Check, CheckCircle2, ChevronDown, ChevronRight,
+  CircleDot, Copy, ExternalLink, FlaskConical, Gauge, GitPullRequestArrow, Laptop,
+  ListTree, Play, RotateCcw, ServerCog, Settings2, ShieldCheck, Smartphone,
+  Sparkles, TerminalSquare, UserCheck, Wrench,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -61,6 +62,14 @@ const toolCatalog = [
   { name: "stage_mitigation", kind: "Prepare", description: "Stage a predefined mitigation for visible human review." },
   { name: "execute_approved_mitigation", kind: "Destructive", description: "Execute only after explicit approval exists in the page." },
   { name: "reset_incident_simulation", kind: "Reset", description: "Return the deterministic scenario to its initial state." },
+];
+
+const webMcpResources = [
+  { title: "OpenAI Site tools guide", description: "How ChatGPT discovers, reviews, and invokes WebMCP tools in the built-in browser.", href: "https://learn.chatgpt.com/docs/webmcp", label: "OpenAI documentation" },
+  { title: "WebMCP specification", description: "The proposed web standard and current API surface maintained by the Web Machine Learning Community Group.", href: "https://webmachinelearning.github.io/webmcp/", label: "Specification" },
+  { title: "WebMCP on GitHub", description: "Explainers, examples, issues, and the public standards discussion.", href: "https://github.com/webmachinelearning/webmcp", label: "Open source" },
+  { title: "Chrome developer guide", description: "Chrome 149+ origin-trial and local experimental-flag instructions for WebMCP.", href: "https://developer.chrome.com/docs/ai/webmcp", label: "Browser implementation" },
+  { title: "WebMCP app showcase", description: "Examples of websites designed for people and agents to use together.", href: "https://developers.openai.com/showcase?view=webmcp-apps", label: "Examples" },
 ];
 
 const actorIcon = { agent: Bot, human: UserCheck, system: TerminalSquare, simulator: FlaskConical };
@@ -271,7 +280,7 @@ export default function Home() {
   const statusCopy = {
     detecting: { title: "Checking WebMCP support", detail: "Feature detection is running.", tone: "detecting" },
     active: { title: "Native WebMCP active", detail: "5 tools registered in this page.", tone: "connected" },
-    unavailable: { title: "Native WebMCP unavailable", detail: "Use the ChatGPT Work browser or Chrome 149+ with the testing flag.", tone: "unavailable" },
+    unavailable: { title: "Native WebMCP unavailable", detail: "Use the ChatGPT desktop Browser or Chrome 149+ with the testing flag.", tone: "unavailable" },
     failed: { title: "Tool registration failed", detail: "Use the simulator below and inspect the browser console for details.", tone: "failed" },
   }[toolStatus];
 
@@ -288,6 +297,34 @@ export default function Home() {
       <section className="incident-strip" aria-label="Active incident summary">
         <div className="incident-title"><span className={`status-light ${status}`} /><div><span className="eyebrow">INC-2841 · SEV-2 · CHECKOUT-API</span><h1>{status === "mitigated" ? "Service recovered" : "Elevated latency and payment errors"}</h1></div></div>
         <div className="incident-meta"><span>Started 14:11 UTC</span><span className={`state-pill ${status}`}>{status.replace("-", " ")}</span><button onClick={() => reset()} aria-label="Reset incident simulation"><RotateCcw size={14} /> Reset</button></div>
+      </section>
+
+      <section className="webmcp-intro" aria-labelledby="webmcp-intro-title">
+        <div className="intro-copy">
+          <span className="section-kicker">New to WebMCP?</span>
+          <h2 id="webmcp-intro-title">A website can expose reliable tools alongside its human interface</h2>
+          <p>WebMCP is an experimental open standard that lets a page describe structured actions an AI agent can discover and call. Instead of guessing where to click, the agent receives named tools with schemas, results, and safety boundaries while you and the agent remain on the same live page.</p>
+          <div className="concept-flow" aria-label="How WebMCP works">
+            <span><Laptop size={16} /> This live page</span><ChevronRight size={15} /><span><Wrench size={16} /> Five scoped tools</span><ChevronRight size={15} /><span><Bot size={16} /> Compatible agent</span><ChevronRight size={15} /><span><UserCheck size={16} /> Human approval</span>
+          </div>
+          <small>Unlike traditional MCP, these tools belong to the open browser page and share its current state and session. No separate MCP server is required for this demo.</small>
+        </div>
+
+        <div className="setup-card">
+          <div className="setup-heading"><Settings2 size={18} /><div><span className="section-kicker">Before you test</span><h3>Native WebMCP requires desktop</h3></div></div>
+          <div className="mobile-limit"><Smartphone size={17} /><div><strong>On a phone or tablet?</strong><span>You can explore the interface and simulator, but mobile browsers cannot run this native Site tools demo.</span></div></div>
+          <ol className="setup-steps">
+            <li><span>1</span><div><strong>Use the latest ChatGPT desktop app</strong><small>Start a ChatGPT Work or Codex chat with GPT-5.6 Sol or Terra. Site tools are disabled on Luna.</small></div></li>
+            <li><span>2</span><div><strong>Open the built-in Browser</strong><small>Use <code>@Browser</code> or open this site from the desktop app. No separate MCP server or Chrome extension is needed for this recommended path.</small></div></li>
+            <li><span>3</span><div><strong>Enable Site tools</strong><small>In Settings → Browser → Permissions, turn on <em>Enable site tools</em>, then reload this page.</small></div></li>
+            <li><span>4</span><div><strong>Verify the connection</strong><small>Look for <em>Native WebMCP active · 5 tools registered</em> here and <em>Site tools</em> in the browser address bar.</small></div></li>
+          </ol>
+          <details className="chrome-path">
+            <summary>Alternative: test in desktop Chrome <ChevronDown size={14} /></summary>
+            <p>Use Chrome 149 or newer, open <code>chrome://flags/#enable-webmcp-testing</code>, enable the flag, and relaunch Chrome. To let ChatGPT use your regular Chrome profile, install the ChatGPT browser extension from Settings → Computer Use and select <code>@Chrome</code>. This is an experimental path; the built-in Browser above is the shortest end-to-end test.</p>
+          </details>
+          <a className="setup-link" href="https://learn.chatgpt.com/docs/webmcp" target="_blank" rel="noreferrer">Open official setup guide <ExternalLink size={13} /></a>
+        </div>
       </section>
 
       <section className="test-lab" aria-labelledby="test-lab-title">
@@ -378,6 +415,13 @@ export default function Home() {
           <summary><div><Wrench size={17} /><span><strong id="tool-reference-title">Inspect the five-tool contract</strong><small>Names, safety classification, and behavior</small></span></div><ChevronDown size={16} /></summary>
           <div className="tool-grid">{toolCatalog.map((tool) => <article key={tool.name}><div><code>{tool.name}</code><span className={tool.kind.toLowerCase().replace(" ", "-")}>{tool.kind}</span></div><p>{tool.description}</p></article>)}</div>
         </details>
+      </section>
+
+      <section className="resource-section" aria-labelledby="resource-title">
+        <div className="resource-heading"><div><span className="section-kicker">Learn and build</span><h2 id="resource-title">WebMCP resources</h2></div><BookOpen size={20} /></div>
+        <div className="resource-grid">
+          {webMcpResources.map((resource) => <a href={resource.href} target="_blank" rel="noreferrer" key={resource.href}><span>{resource.label}</span><div><strong>{resource.title}</strong><ExternalLink size={13} /></div><p>{resource.description}</p></a>)}
+        </div>
       </section>
 
       <footer>

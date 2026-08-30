@@ -37,6 +37,21 @@ test("ships an observable guided test experience", () => {
   assert.match(source, /runProofSequence/);
   assert.match(source, /human approval gate/);
   assert.match(source, /external systems changed/);
+  assert.match(source, /Native WebMCP requires desktop/);
+  assert.match(source, /mobile browsers cannot run this native Site tools demo/);
+  assert.match(source, /Settings → Browser → Permissions/);
+  assert.match(source, /chrome:\/\/flags\/#enable-webmcp-testing/);
+  assert.match(source, /No separate MCP server or Chrome extension is needed/);
+});
+
+test("explains WebMCP and links primary learning resources", () => {
+  assert.match(source, /WebMCP is an experimental open standard/);
+  assert.match(source, /Unlike traditional MCP/);
+  assert.match(source, /https:\/\/learn\.chatgpt\.com\/docs\/webmcp/);
+  assert.match(source, /https:\/\/webmachinelearning\.github\.io\/webmcp\//);
+  assert.match(source, /https:\/\/github\.com\/webmachinelearning\/webmcp/);
+  assert.match(source, /https:\/\/developer\.chrome\.com\/docs\/ai\/webmcp/);
+  assert.match(source, /WebMCP app showcase/);
 });
 
 test("keeps creator and source attribution visible", () => {
