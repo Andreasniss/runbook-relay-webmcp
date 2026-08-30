@@ -33,6 +33,10 @@ test("ships an observable guided test experience", () => {
   assert.match(source, /Simulated calls do not prove native browser tool discovery/);
   assert.match(source, /recordReceipt\(tool, "native"/);
   assert.match(source, /recordReceipt\(tool, "simulator"/);
+  assert.match(source, /Run the blocked-action proof/);
+  assert.match(source, /runProofSequence/);
+  assert.match(source, /human approval gate/);
+  assert.match(source, /external systems changed/);
 });
 
 test("keeps creator and source attribution visible", () => {

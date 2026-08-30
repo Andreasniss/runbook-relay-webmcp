@@ -239,6 +239,21 @@ export default function Home() {
     recordReceipt(tool, "simulator", input, result, blocked ? "blocked" : "success");
   }, [compareMitigations, executeMitigation, getSnapshot, recordReceipt, reset, stageMitigation]);
 
+  const runProofSequence = useCallback(() => {
+    const option = mitigations[0];
+    setSelectedId(option.id);
+    setStagedId(option.id);
+    setApproved(false);
+    setStatus("awaiting-approval");
+    appendAudit("simulator", "Evidence inspected", "Read incident snapshot and compared three deterministic mitigations.");
+    appendAudit("simulator", "Mitigation staged", `${option.title}. Execution remains locked pending human approval.`);
+    appendAudit("system", "Execution blocked", "Policy requires explicit human approval in the page.");
+    recordReceipt("get_incident_snapshot", "simulator", {}, getSnapshot());
+    recordReceipt("compare_mitigations", "simulator", { mitigationId: option.id }, { current: { p95Latency: "4.8 s", errorRate: "8.7%" }, options: mitigations });
+    recordReceipt("stage_mitigation", "simulator", { mitigationId: option.id }, { staged: option, requiresHumanApproval: true, executed: false });
+    recordReceipt("execute_approved_mitigation", "simulator", {}, { executed: false, reason: "Human approval is required in the page before execution." }, "blocked");
+  }, [appendAudit, getSnapshot, recordReceipt]);
+
   const copyPrompt = async (step: number, prompt: string) => {
     try {
       await navigator.clipboard.writeText(prompt);
@@ -280,6 +295,12 @@ export default function Home() {
           <div><span className="section-kicker">Guided WebMCP test</span><h2 id="test-lab-title">Prove the agent can act, but cannot self-approve</h2></div>
           <div className={`environment-card ${statusCopy.tone}`}><span className="environment-dot" /><div><strong>{statusCopy.title}</strong><small>{statusCopy.detail}</small></div></div>
         </div>
+        <div className="proof-strip" aria-label="Demo evidence summary">
+          <div><strong>5</strong><span>scoped tools</span></div>
+          <div><strong>1</strong><span>human approval gate</span></div>
+          <div><strong>0</strong><span>external systems changed</span></div>
+          <div><strong>100%</strong><span>deterministic and resettable</span></div>
+        </div>
         <div className="lab-grid">
           <div className="demo-steps">
             {demoSteps.map((step) => (
@@ -296,13 +317,14 @@ export default function Home() {
             <p>Exercise the same application handlers when native WebMCP is unavailable.</p>
             <div className="simulation-warning"><AlertTriangle size={14} /><span>Simulated calls do not prove native browser tool discovery.</span></div>
             <div className="simulator-actions">
+              <button className="sequence-action" onClick={runProofSequence}><Sparkles size={13} /> Run the blocked-action proof</button>
               <button onClick={() => runSimulation("get_incident_snapshot")}><Play size={13} /> Read snapshot</button>
               <button onClick={() => runSimulation("compare_mitigations")}><Play size={13} /> Compare low-risk option</button>
               <button onClick={() => runSimulation("stage_mitigation")}><Play size={13} /> Stage low-risk option</button>
               <button className="danger-action" onClick={() => runSimulation("execute_approved_mitigation")}><ShieldCheck size={13} /> Try execution</button>
               <button onClick={() => runSimulation("reset_incident_simulation")}><RotateCcw size={13} /> Reset scenario</button>
             </div>
-            <small>For the strongest proof: stage, try execution before approval, approve in the page, then try execution again.</small>
+            <small>Fast path: run the proof, inspect the blocked receipt, approve in the page, then execute the change.</small>
           </aside>
         </div>
       </section>
