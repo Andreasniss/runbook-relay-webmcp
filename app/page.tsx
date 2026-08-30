@@ -279,7 +279,7 @@ export default function Home() {
 
   const statusCopy = {
     detecting: { title: "Checking WebMCP support", detail: "Feature detection is running.", tone: "detecting" },
-    active: { title: "Native WebMCP active", detail: "5 tools registered in this page.", tone: "connected" },
+    active: { title: "Native WebMCP active · 5 tools registered", detail: "Tools are ready in this page.", tone: "connected" },
     unavailable: { title: "Native WebMCP unavailable", detail: "Use the ChatGPT desktop Browser or Chrome 149+ with the testing flag.", tone: "unavailable" },
     failed: { title: "Tool registration failed", detail: "Use the simulator below and inspect the browser console for details.", tone: "failed" },
   }[toolStatus];

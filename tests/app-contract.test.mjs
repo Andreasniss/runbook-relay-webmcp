@@ -38,6 +38,7 @@ test("ships an observable guided test experience", () => {
   assert.match(source, /human approval gate/);
   assert.match(source, /external systems changed/);
   assert.match(source, /Native WebMCP requires desktop/);
+  assert.match(source, /Native WebMCP active · 5 tools registered/);
   assert.match(source, /mobile browsers cannot run this native Site tools demo/);
   assert.match(source, /Settings → Browser → Permissions/);
   assert.match(source, /chrome:\/\/flags\/#enable-webmcp-testing/);
