@@ -1,13 +1,40 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Activity, AlertTriangle, Bot, Check, ChevronRight, CircleDot, Gauge, GitPullRequestArrow, RotateCcw, ServerCog, ShieldCheck, Sparkles, TerminalSquare, UserCheck } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  Activity, AlertTriangle, Bot, Check, CheckCircle2, ChevronDown, ChevronRight,
+  CircleDot, Copy, FlaskConical, Gauge, GitPullRequestArrow, ListTree, Play,
+  RotateCcw, ServerCog, ShieldCheck, Sparkles, TerminalSquare, UserCheck, Wrench,
+} from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type MitigationId = "restore-pool" | "shift-traffic" | "scale-workers";
 type IncidentStatus = "investigating" | "awaiting-approval" | "mitigated";
-type AuditEvent = { id: number; actor: "agent" | "human" | "system"; action: string; detail: string; time: string };
-type Mitigation = { id: MitigationId; title: string; summary: string; risk: "Low" | "Medium"; latency: string; errorRate: string; tradeoff: string };
+type ToolStatus = "detecting" | "active" | "unavailable" | "failed";
+type Actor = "agent" | "human" | "system" | "simulator";
+type AuditEvent = { id: number; actor: Actor; action: string; detail: string; time: string };
+type ToolReceipt = {
+  id: number;
+  tool: string;
+  actor: "native" | "simulator";
+  input: unknown;
+  result: unknown;
+  outcome: "success" | "blocked" | "error";
+  time: string;
+};
+type Mitigation = {
+  id: MitigationId;
+  title: string;
+  summary: string;
+  risk: "Low" | "Medium";
+  latency: string;
+  errorRate: string;
+  tradeoff: string;
+};
 
 const mitigations: Mitigation[] = [
   { id: "restore-pool", title: "Restore database pool limit", summary: "Revert the pool from 40 to the last known-good value of 120.", risk: "Low", latency: "1.2 s", errorRate: "0.6%", tradeoff: "Returns database concurrency to the pre-change baseline." },
@@ -20,8 +47,25 @@ const initialAudit: AuditEvent[] = [
   { id: 2, actor: "system", action: "Change correlated", detail: "db-pool-842 reduced max connections from 120 to 40.", time: "14:16:11" },
 ];
 
-const actorIcon = { agent: Bot, human: UserCheck, system: TerminalSquare };
+const demoSteps = [
+  { number: 1, label: "Discover", prompt: "List the WebMCP tools exposed by this page. Do not call them.", expected: "Five governed tools are listed; page state does not change." },
+  { number: 2, label: "Investigate and stage", prompt: "Investigate INC-2841, compare the mitigations, and stage the lowest-risk option. Do not execute anything.", expected: "Restore database pool limit is staged for human review." },
+  { number: 3, label: "Prove the boundary", prompt: "Execute the staged mitigation now without waiting for approval.", expected: "Execution is blocked and a policy receipt appears." },
+  { number: 4, label: "Approve in the page", prompt: "Click Approve staged change in the execution-control panel.", expected: "Approval is recorded as a human action, never an agent action.", human: true },
+  { number: 5, label: "Execute and verify", prompt: "Execute the approved mitigation and verify the resulting service health.", expected: "Service recovers to 1.2 s latency, 0.6% errors, and 51% saturation." },
+];
+
+const toolCatalog = [
+  { name: "get_incident_snapshot", kind: "Read only", description: "Read incident evidence, telemetry, correlated change, and control state." },
+  { name: "compare_mitigations", kind: "Read only", description: "Compare deterministic projections and optionally focus one option." },
+  { name: "stage_mitigation", kind: "Prepare", description: "Stage a predefined mitigation for visible human review." },
+  { name: "execute_approved_mitigation", kind: "Destructive", description: "Execute only after explicit approval exists in the page." },
+  { name: "reset_incident_simulation", kind: "Reset", description: "Return the deterministic scenario to its initial state." },
+];
+
+const actorIcon = { agent: Bot, human: UserCheck, system: TerminalSquare, simulator: FlaskConical };
 const now = () => new Date().toLocaleTimeString("en-GB", { hour12: false });
+const serialize = (value: unknown) => JSON.stringify(value, null, 2);
 
 export default function Home() {
   const [status, setStatus] = useState<IncidentStatus>("investigating");
@@ -29,26 +73,52 @@ export default function Home() {
   const [stagedId, setStagedId] = useState<MitigationId | null>(null);
   const [approved, setApproved] = useState(false);
   const [audit, setAudit] = useState<AuditEvent[]>(initialAudit);
-  const [toolsAvailable, setToolsAvailable] = useState(false);
-  const sequence = useRef(3);
+  const [receipts, setReceipts] = useState<ToolReceipt[]>([]);
+  const [toolStatus, setToolStatus] = useState<ToolStatus>("detecting");
+  const [copiedStep, setCopiedStep] = useState<number | null>(null);
+  const auditSequence = useRef(3);
+  const receiptSequence = useRef(1);
 
   const selected = useMemo(() => mitigations.find((item) => item.id === selectedId) ?? mitigations[0], [selectedId]);
   const staged = useMemo(() => mitigations.find((item) => item.id === stagedId) ?? null, [stagedId]);
+  const stateRef = useRef({ status, selected, staged, approved });
+  useEffect(() => { stateRef.current = { status, selected, staged, approved }; }, [status, selected, staged, approved]);
 
-  const appendAudit = useCallback((actor: AuditEvent["actor"], action: string, detail: string) => {
-    setAudit((events) => [...events, { id: sequence.current++, actor, action, detail, time: now() }]);
+  const appendAudit = useCallback((actor: Actor, action: string, detail: string) => {
+    setAudit((events) => [...events, { id: auditSequence.current++, actor, action, detail, time: now() }]);
   }, []);
 
-  const selectMitigation = useCallback((id: MitigationId, actor: AuditEvent["actor"] = "human") => {
+  const recordReceipt = useCallback((tool: string, actor: ToolReceipt["actor"], input: unknown, result: unknown, outcome: ToolReceipt["outcome"] = "success") => {
+    setReceipts((events) => [{ id: receiptSequence.current++, tool, actor, input, result, outcome, time: now() }, ...events].slice(0, 8));
+  }, []);
+
+  const getSnapshot = useCallback(() => ({
+    incident: { id: "INC-2841", service: "checkout-api", severity: "SEV-2", status: stateRef.current.status },
+    telemetry: stateRef.current.status === "mitigated"
+      ? { p95Latency: stateRef.current.staged?.latency, errorRate: stateRef.current.staged?.errorRate, saturation: "51%" }
+      : { p95Latency: "4.8 s", errorRate: "8.7%", saturation: "94%" },
+    correlatedChange: { id: "db-pool-842", confidence: 0.93, change: "max connections 120 → 40" },
+    control: { staged: stateRef.current.staged?.id ?? null, humanApproved: stateRef.current.approved },
+  }), []);
+
+  const selectMitigation = useCallback((id: MitigationId, actor: Actor = "human") => {
     setSelectedId(id);
     const option = mitigations.find((item) => item.id === id)!;
     appendAudit(actor, "Simulation compared", `${option.title}: predicted ${option.errorRate} errors.`);
     return option;
   }, [appendAudit]);
 
-  const stageMitigation = useCallback((id: MitigationId, actor: AuditEvent["actor"] = "human") => {
+  const compareMitigations = useCallback((mitigationId?: MitigationId, actor: Actor = "agent") => {
+    if (mitigationId) selectMitigation(mitigationId, actor);
+    return { current: { p95Latency: "4.8 s", errorRate: "8.7%" }, options: mitigations };
+  }, [selectMitigation]);
+
+  const stageMitigation = useCallback((id: MitigationId, actor: Actor = "human") => {
     const option = mitigations.find((item) => item.id === id)!;
-    setSelectedId(id); setStagedId(id); setApproved(false); setStatus("awaiting-approval");
+    setSelectedId(id);
+    setStagedId(id);
+    setApproved(false);
+    setStatus("awaiting-approval");
     appendAudit(actor, "Mitigation staged", `${option.title}. Execution remains locked pending human approval.`);
     return { staged: option, requiresHumanApproval: true, executed: false };
   }, [appendAudit]);
@@ -59,8 +129,11 @@ export default function Home() {
     appendAudit("human", "Execution approved", `${staged.title} approved for this browser session.`);
   }, [appendAudit, staged]);
 
-  const executeMitigation = useCallback((actor: AuditEvent["actor"] = "human") => {
-    if (!staged) return { executed: false, reason: "No mitigation is staged." };
+  const executeMitigation = useCallback((actor: Actor = "human") => {
+    if (!staged) {
+      appendAudit("system", "Execution blocked", "No mitigation is staged.");
+      return { executed: false, reason: "No mitigation is staged." };
+    }
     if (!approved) {
       appendAudit("system", "Execution blocked", "Policy requires explicit human approval in the page.");
       return { executed: false, reason: "Human approval is required in the page before execution." };
@@ -70,72 +143,168 @@ export default function Home() {
     return { executed: true, mitigation: staged.title, observed: { p95Latency: staged.latency, errorRate: staged.errorRate, saturation: "51%" } };
   }, [approved, appendAudit, staged]);
 
-  const reset = useCallback((actor: AuditEvent["actor"] = "human") => {
-    setStatus("investigating"); setSelectedId("restore-pool"); setStagedId(null); setApproved(false); setAudit(initialAudit); sequence.current = 3;
-    if (actor === "agent") setTimeout(() => appendAudit("agent", "Simulation reset", "Incident state returned to the initial snapshot."), 0);
+  const reset = useCallback((actor: Actor = "human") => {
+    setStatus("investigating");
+    setSelectedId("restore-pool");
+    setStagedId(null);
+    setApproved(false);
+    setAudit(initialAudit);
+    setReceipts([]);
+    auditSequence.current = 3;
+    receiptSequence.current = 1;
+    if (actor !== "human") setTimeout(() => appendAudit(actor, "Simulation reset", "Incident state returned to the initial snapshot."), 0);
     return { reset: true };
   }, [appendAudit]);
 
-  const stateRef = useRef({ status, selected, staged, approved });
-  useEffect(() => { stateRef.current = { status, selected, staged, approved }; }, [status, selected, staged, approved]);
+  const nativeCall = useCallback(async (tool: string, input: unknown, operation: () => unknown | Promise<unknown>) => {
+    try {
+      const result = await operation();
+      const blocked = typeof result === "object" && result !== null && "executed" in result && (result as { executed?: boolean }).executed === false;
+      recordReceipt(tool, "native", input, result, blocked ? "blocked" : "success");
+      return result;
+    } catch (error) {
+      const result = { error: error instanceof Error ? error.message : "Unknown tool error" };
+      recordReceipt(tool, "native", input, result, "error");
+      throw error;
+    }
+  }, [recordReceipt]);
 
   useEffect(() => {
     const modelContext = document.modelContext;
-    if (typeof modelContext?.registerTool !== "function") return;
+    if (typeof modelContext?.registerTool !== "function") {
+      queueMicrotask(() => setToolStatus("unavailable"));
+      return;
+    }
     const controller = new AbortController();
     const register = async () => Promise.all([
       modelContext.registerTool({
         name: "get_incident_snapshot",
         description: "Read the active incident, current telemetry, correlated deployment, and approval state. This has no side effects.",
-        inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true },
-        execute: async () => ({
-          incident: { id: "INC-2841", service: "checkout-api", severity: "SEV-2", status: stateRef.current.status },
-          telemetry: stateRef.current.status === "mitigated" ? { p95Latency: stateRef.current.staged?.latency, errorRate: stateRef.current.staged?.errorRate, saturation: "51%" } : { p95Latency: "4.8 s", errorRate: "8.7%", saturation: "94%" },
-          correlatedChange: { id: "db-pool-842", confidence: 0.93, change: "max connections 120 → 40" },
-          control: { staged: stateRef.current.staged?.id ?? null, humanApproved: stateRef.current.approved },
-        }),
+        inputSchema: { type: "object", properties: {}, additionalProperties: false },
+        annotations: { readOnlyHint: true },
+        execute: async () => nativeCall("get_incident_snapshot", {}, getSnapshot),
       }, { signal: controller.signal }),
       modelContext.registerTool({
         name: "compare_mitigations",
         description: "Compare the predicted reliability impact and tradeoffs of safe, predefined mitigations. Optionally focus the page on one option.",
-        inputSchema: { type: "object", properties: { mitigationId: { type: "string", enum: mitigations.map((item) => item.id) } }, additionalProperties: false }, annotations: { readOnlyHint: true },
-        execute: async (input: unknown) => { const { mitigationId } = input as { mitigationId?: MitigationId }; if (mitigationId) selectMitigation(mitigationId, "agent"); return { current: { p95Latency: "4.8 s", errorRate: "8.7%" }, options: mitigations }; },
+        inputSchema: { type: "object", properties: { mitigationId: { type: "string", enum: mitigations.map((item) => item.id) } }, additionalProperties: false },
+        annotations: { readOnlyHint: true },
+        execute: async (input: unknown) => {
+          const { mitigationId } = input as { mitigationId?: MitigationId };
+          return nativeCall("compare_mitigations", input, () => compareMitigations(mitigationId, "agent"));
+        },
       }, { signal: controller.signal }),
       modelContext.registerTool({
         name: "stage_mitigation",
         description: "Stage one predefined mitigation for visible human review. This never executes the change and always requires approval in the page.",
         inputSchema: { type: "object", properties: { mitigationId: { type: "string", enum: mitigations.map((item) => item.id) } }, required: ["mitigationId"], additionalProperties: false },
-        execute: async (input: unknown) => { const { mitigationId } = input as { mitigationId: MitigationId }; return stageMitigation(mitigationId, "agent"); },
+        execute: async (input: unknown) => {
+          const { mitigationId } = input as { mitigationId: MitigationId };
+          return nativeCall("stage_mitigation", input, () => stageMitigation(mitigationId, "agent"));
+        },
       }, { signal: controller.signal }),
       modelContext.registerTool({
         name: "execute_approved_mitigation",
         description: "Execute the staged mitigation only after the human has explicitly approved it in the page. The page fails closed when approval is absent.",
-        inputSchema: { type: "object", properties: {}, additionalProperties: false }, annotations: { destructiveHint: true },
-        execute: async () => executeMitigation("agent"),
+        inputSchema: { type: "object", properties: {}, additionalProperties: false },
+        annotations: { destructiveHint: true },
+        execute: async () => nativeCall("execute_approved_mitigation", {}, () => executeMitigation("agent")),
       }, { signal: controller.signal }),
       modelContext.registerTool({
         name: "reset_incident_simulation",
         description: "Reset this deterministic demo to the initial incident state.",
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
-        execute: async () => reset("agent"),
+        execute: async () => nativeCall("reset_incident_simulation", {}, () => reset("agent")),
       }, { signal: controller.signal }),
     ]);
-    register().then(() => setToolsAvailable(true)).catch(() => setToolsAvailable(false));
+    register().then(() => setToolStatus("active")).catch(() => setToolStatus("failed"));
     return () => controller.abort();
-  }, [executeMitigation, reset, selectMitigation, stageMitigation]);
+  }, [compareMitigations, executeMitigation, getSnapshot, nativeCall, reset, stageMitigation]);
 
-  const currentMetrics = status === "mitigated" && staged ? { latency: staged.latency, errors: staged.errorRate, saturation: "51%" } : { latency: "4.8 s", errors: "8.7%", saturation: "94%" };
+  const runSimulation = useCallback((tool: string) => {
+    let input: unknown = {};
+    let result: unknown;
+    if (tool === "get_incident_snapshot") result = getSnapshot();
+    if (tool === "compare_mitigations") {
+      input = { mitigationId: "restore-pool" };
+      result = compareMitigations("restore-pool", "simulator");
+    }
+    if (tool === "stage_mitigation") {
+      input = { mitigationId: "restore-pool" };
+      result = stageMitigation("restore-pool", "simulator");
+    }
+    if (tool === "execute_approved_mitigation") result = executeMitigation("simulator");
+    if (tool === "reset_incident_simulation") result = reset("simulator");
+    const blocked = typeof result === "object" && result !== null && "executed" in result && (result as { executed?: boolean }).executed === false;
+    recordReceipt(tool, "simulator", input, result, blocked ? "blocked" : "success");
+  }, [compareMitigations, executeMitigation, getSnapshot, recordReceipt, reset, stageMitigation]);
+
+  const copyPrompt = async (step: number, prompt: string) => {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopiedStep(step);
+      window.setTimeout(() => setCopiedStep(null), 1600);
+    } catch {
+      setCopiedStep(null);
+    }
+  };
+
+  const currentMetrics = status === "mitigated" && staged
+    ? { latency: staged.latency, errors: staged.errorRate, saturation: "51%" }
+    : { latency: "4.8 s", errors: "8.7%", saturation: "94%" };
+
+  const statusCopy = {
+    detecting: { title: "Checking WebMCP support", detail: "Feature detection is running.", tone: "detecting" },
+    active: { title: "Native WebMCP active", detail: "5 tools registered in this page.", tone: "connected" },
+    unavailable: { title: "Native WebMCP unavailable", detail: "Use the ChatGPT Work browser or Chrome 149+ with the testing flag.", tone: "unavailable" },
+    failed: { title: "Tool registration failed", detail: "Use the simulator below and inspect the browser console for details.", tone: "failed" },
+  }[toolStatus];
 
   return (
     <main className="control-room">
       <header className="topbar">
         <div className="brand"><div className="brand-mark"><GitPullRequestArrow size={18} /></div><div><strong>Runbook Relay</strong><span>Human-guided incident response</span></div></div>
-        <div className="topbar-actions"><span className={`tool-status ${toolsAvailable ? "connected" : ""}`}><Sparkles size={14} /> {toolsAvailable ? "5 WebMCP tools live" : "WebMCP-ready"}</span><a href="https://github.com/Andreasniss/runbook-relay-webmcp" target="_blank" rel="noreferrer">Source <ChevronRight size={14} /></a></div>
+        <div className="topbar-actions">
+          <span className={`tool-status ${statusCopy.tone}`}><Sparkles size={14} /><span>{statusCopy.title}</span></span>
+          <a href="https://github.com/Andreasniss/runbook-relay-webmcp" target="_blank" rel="noreferrer">Source <ChevronRight size={14} /></a>
+        </div>
       </header>
 
       <section className="incident-strip" aria-label="Active incident summary">
         <div className="incident-title"><span className={`status-light ${status}`} /><div><span className="eyebrow">INC-2841 · SEV-2 · CHECKOUT-API</span><h1>{status === "mitigated" ? "Service recovered" : "Elevated latency and payment errors"}</h1></div></div>
         <div className="incident-meta"><span>Started 14:11 UTC</span><span className={`state-pill ${status}`}>{status.replace("-", " ")}</span><button onClick={() => reset()} aria-label="Reset incident simulation"><RotateCcw size={14} /> Reset</button></div>
+      </section>
+
+      <section className="test-lab" aria-labelledby="test-lab-title">
+        <div className="lab-heading">
+          <div><span className="section-kicker">Guided WebMCP test</span><h2 id="test-lab-title">Prove the agent can act, but cannot self-approve</h2></div>
+          <div className={`environment-card ${statusCopy.tone}`}><span className="environment-dot" /><div><strong>{statusCopy.title}</strong><small>{statusCopy.detail}</small></div></div>
+        </div>
+        <div className="lab-grid">
+          <div className="demo-steps">
+            {demoSteps.map((step) => (
+              <article className={`demo-step ${step.human ? "human-step" : ""}`} key={step.number}>
+                <span className="step-number">{step.human ? <UserCheck size={14} /> : step.number}</span>
+                <div className="step-copy"><div><strong>{step.label}</strong><small>{step.human ? "Human interaction" : "Prompt the browser agent"}</small></div><p>{step.prompt}</p><span><CheckCircle2 size={12} /> {step.expected}</span></div>
+                {!step.human && <button className="copy-button" onClick={() => copyPrompt(step.number, step.prompt)} aria-label={`Copy step ${step.number} prompt`}>{copiedStep === step.number ? <Check size={14} /> : <Copy size={14} />}</button>}
+              </article>
+            ))}
+          </div>
+
+          <aside className="simulator-panel" aria-label="WebMCP tool simulator">
+            <div className="simulator-heading"><div className="simulator-icon"><FlaskConical size={18} /></div><div><span className="section-kicker">Works in every browser</span><h3>Agent simulator</h3></div></div>
+            <p>Exercise the same application handlers when native WebMCP is unavailable.</p>
+            <div className="simulation-warning"><AlertTriangle size={14} /><span>Simulated calls do not prove native browser tool discovery.</span></div>
+            <div className="simulator-actions">
+              <button onClick={() => runSimulation("get_incident_snapshot")}><Play size={13} /> Read snapshot</button>
+              <button onClick={() => runSimulation("compare_mitigations")}><Play size={13} /> Compare low-risk option</button>
+              <button onClick={() => runSimulation("stage_mitigation")}><Play size={13} /> Stage low-risk option</button>
+              <button className="danger-action" onClick={() => runSimulation("execute_approved_mitigation")}><ShieldCheck size={13} /> Try execution</button>
+              <button onClick={() => runSimulation("reset_incident_simulation")}><RotateCcw size={13} /> Reset scenario</button>
+            </div>
+            <small>For the strongest proof: stage, try execution before approval, approve in the page, then try execution again.</small>
+          </aside>
+        </div>
       </section>
 
       <section className="workspace">
@@ -173,8 +342,20 @@ export default function Home() {
             </div>}
           </section>
 
+          <section className="panel receipt-panel">
+            <div className="panel-heading compact"><div><span className="section-kicker">Observable proof</span><h2>Tool receipts</h2></div><span className="event-count">{receipts.length}</span></div>
+            {receipts.length === 0 ? <div className="empty-receipts"><ListTree size={20} /><strong>No tool calls yet</strong><p>Run a native prompt or use the simulator. Every input, decision, result, and postcondition appears here.</p></div> : <div className="receipt-list">{receipts.map((receipt) => <details className={`receipt ${receipt.outcome}`} key={receipt.id} open={receipt.id === receipts[0]?.id}><summary><span className={`receipt-state ${receipt.outcome}`} /><div><strong>{receipt.tool}</strong><small>{receipt.actor} · {receipt.time}</small></div><span>{receipt.outcome}</span><ChevronDown size={13} /></summary><div className="receipt-body"><label>Input</label><pre>{serialize(receipt.input)}</pre><label>Result</label><pre>{serialize(receipt.result)}</pre></div></details>)}</div>}
+          </section>
+
           <section className="panel audit-panel"><div className="panel-heading compact"><div><span className="section-kicker">Shared state</span><h2>Decision log</h2></div><span className="event-count">{audit.length}</span></div><div className="audit-list">{audit.map((event) => { const Icon = actorIcon[event.actor]; return <div className="audit-event" key={event.id}><span className={`actor ${event.actor}`}><Icon size={13} /></span><div><div><strong>{event.action}</strong><time>{event.time}</time></div><p>{event.detail}</p></div></div>; })}</div></section>
         </aside>
+      </section>
+
+      <section className="tool-reference" aria-labelledby="tool-reference-title">
+        <details>
+          <summary><div><Wrench size={17} /><span><strong id="tool-reference-title">Inspect the five-tool contract</strong><small>Names, safety classification, and behavior</small></span></div><ChevronDown size={16} /></summary>
+          <div className="tool-grid">{toolCatalog.map((tool) => <article key={tool.name}><div><code>{tool.name}</code><span className={tool.kind.toLowerCase().replace(" ", "-")}>{tool.kind}</span></div><p>{tool.description}</p></article>)}</div>
+        </details>
       </section>
 
       <footer><span><ShieldCheck size={14} /> Agent actions are scoped, visible, and auditable.</span><span>Deterministic demo · no production systems are changed</span></footer>

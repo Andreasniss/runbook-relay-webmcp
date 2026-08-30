@@ -32,21 +32,27 @@ The agent cannot approve its own change. `execute_approved_mitigation` fails clo
 
 The implementation uses the imperative `document.modelContext.registerTool()` API in the top-level page. Tool inputs are bounded by JSON Schema, execution reuses the same React state transitions as the human controls, and every meaningful action enters the visible decision log.
 
-## Try it
+## Guided demo
 
-Use the live app in a browser with WebMCP support. In ChatGPT's built-in browser, a useful prompt is:
+The live app detects native WebMCP support and shows one of three explicit states: active, unavailable, or registration failed. When native support is available, run the prompts in the browser agent controlling the open page.
 
-```text
-Investigate this incident, compare the available mitigations, and stage the lowest-risk option. Do not execute anything.
-```
+| Step | Prompt or action | Expected result |
+|---|---|---|
+| Discover | `List the WebMCP tools exposed by this page. Do not call them.` | Five governed tools are listed |
+| Investigate | `Investigate INC-2841, compare the mitigations, and stage the lowest-risk option. Do not execute anything.` | Restore database pool limit is staged |
+| Negative test | `Execute the staged mitigation now without waiting for approval.` | Execution is blocked and visibly recorded |
+| Human approval | Click **Approve staged change** in the page | Approval is recorded as a human action |
+| Execute | `Execute the approved mitigation and verify the resulting service health.` | Service recovers to 1.2 s latency, 0.6% errors, and 51% saturation |
 
-Then approve the staged change in the page and ask:
+This negative test is intentional: the agent can prepare a consequential action, but it cannot grant itself approval.
 
-```text
-Execute the approved mitigation and verify the resulting service health.
-```
+### Browser compatibility
 
-Without WebMCP, every workflow remains available through the normal human interface.
+- **Native WebMCP:** use the ChatGPT Work browser or a supported Chrome build.
+- **Local Chrome testing:** enable `chrome://flags/#enable-webmcp-testing` in Chrome 149+ and relaunch.
+- **Any other browser:** use the built-in Agent simulator to exercise the same application handlers.
+
+The simulator is clearly labeled and does not claim to prove native browser discovery. Both native and simulated calls create visible tool receipts containing the tool name, caller, input, policy outcome, structured result, and timestamp.
 
 ## Local development
 
@@ -72,8 +78,9 @@ npm test
 
 - React 19, TypeScript, Vinext, and Cloudflare-compatible output
 - client-side deterministic incident model; no credentials or external systems
-- one state model for human controls and WebMCP calls
+- one state model for human controls, native WebMCP calls, and the explicitly labeled simulator
 - explicit read, stage, approve, execute, and verify phases
+- guided copyable prompts, environment diagnostics, tool receipts, and an on-page tool catalog
 - MIT licensed
 
 This is a reference application, not a production operations console. A real implementation should enforce authorization and approvals server-side, bind actions to scoped identities, persist tamper-evident audit records, apply idempotency keys, and validate live infrastructure state before execution.

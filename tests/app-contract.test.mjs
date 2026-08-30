@@ -24,6 +24,17 @@ test("execution fails closed without page approval", () => {
   assert.match(source, /Approve staged change/);
 });
 
+test("ships an observable guided test experience", () => {
+  assert.match(source, /Guided WebMCP test/);
+  assert.match(source, /Native WebMCP unavailable/);
+  assert.match(source, /List the WebMCP tools exposed by this page/);
+  assert.match(source, /Execute the staged mitigation now without waiting for approval/);
+  assert.match(source, /Tool receipts/);
+  assert.match(source, /Simulated calls do not prove native browser tool discovery/);
+  assert.match(source, /recordReceipt\(tool, "native"/);
+  assert.match(source, /recordReceipt\(tool, "simulator"/);
+});
+
 test("renders the production application", async () => {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
@@ -34,4 +45,6 @@ test("renders the production application", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   assert.match(html, /Runbook Relay/);
   assert.match(html, /Human-guided incident response/);
+  assert.match(html, /Guided WebMCP test/);
+  assert.match(html, /Agent simulator/);
 });
