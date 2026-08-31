@@ -435,6 +435,7 @@ export default function Home() {
           <span aria-hidden="true">·</span>
           <a href="https://github.com/Andreasniss/runbook-relay-webmcp" target="_blank" rel="noreferrer">Source on GitHub</a>
         </span>
+        <span className="site-disclaimer">Personal demo project. Views and opinions are my own. Not affiliated with or endorsed by my employer.</span>
       </footer>
     </main>
   );

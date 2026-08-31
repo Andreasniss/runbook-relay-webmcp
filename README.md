@@ -112,6 +112,8 @@ This is a reference application, not a production operations console. A real imp
 
 Andreas Nissen owns the project intent, architecture, requirements, evaluation criteria, risk decisions, and release decisions, and reviews every merged change. Codex assisted with implementation and documentation. AI assistance is treated as an engineering tool, not as an independent human reviewer.
 
+This is a personal demo project. Views and opinions are Andreas's own. It is not affiliated with or endorsed by his employer.
+
 See [SECURITY.md](SECURITY.md) for responsible reporting guidance.
 
 ## References
