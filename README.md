@@ -7,6 +7,8 @@ Runbook Relay is a deterministic incident-response control room where a human an
 
 **[Open the live demo](https://runbook-relay-webmcp.andreas-nissen.chatgpt.site)** · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md)
 
+**Verified 31 August 2026:** production build and lint pass; all 7 contract tests pass; the public path remains deterministic and changes no external system.
+
 > This independent portfolio project was inspired by OpenAI's [WebMCP Challenge](https://openai.com/webmcp-challenge/). It is not a challenge submission and is not affiliated with or endorsed by OpenAI.
 
 ## Review it in three minutes
@@ -24,6 +26,8 @@ Runbook Relay is a deterministic incident-response control room where a human an
 | Observable behavior | Inputs, results, caller, outcome, and audit events remain visible |
 | Deterministic fixture | The full scenario is repeatable and changes no external system |
 | Automated gate | CI lints, builds, renders the worker, and checks the safety contract |
+
+The companion article, [Screen Use vs WebMCP: What Changes When an Agent Gets Governed Tools](https://andreasnissen.dev/writing/screen-use-vs-webmcp/), separates the structural proof in this repository from the browser and model benchmark that has not yet been run.
 
 ## Why this is a WebMCP fit
 
