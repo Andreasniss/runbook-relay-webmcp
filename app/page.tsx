@@ -429,6 +429,10 @@ export default function Home() {
         <span className="site-attribution">
           Built by <a href="https://github.com/Andreasniss" target="_blank" rel="noreferrer">Andreas Nissen</a>
           <span aria-hidden="true">·</span>
+          <a href="https://andreasnissen.dev" target="_blank" rel="noreferrer">andreasnissen.dev</a>
+          <span aria-hidden="true">·</span>
+          <a href="https://www.linkedin.com/in/andreasnissen" target="_blank" rel="noreferrer">Connect on LinkedIn</a>
+          <span aria-hidden="true">·</span>
           <a href="https://github.com/Andreasniss/runbook-relay-webmcp" target="_blank" rel="noreferrer">Source on GitHub</a>
         </span>
       </footer>

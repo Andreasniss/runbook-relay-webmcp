@@ -55,9 +55,12 @@ test("explains WebMCP and links primary learning resources", () => {
   assert.match(source, /WebMCP app showcase/);
 });
 
-test("keeps creator and source attribution visible", () => {
+test("keeps universal creator, portfolio, LinkedIn, and source attribution visible", () => {
   assert.match(source, /Built by/);
   assert.match(source, /https:\/\/github\.com\/Andreasniss/);
+  assert.match(source, /https:\/\/andreasnissen\.dev/);
+  assert.match(source, /https:\/\/www\.linkedin\.com\/in\/andreasnissen/);
+  assert.match(source, /Connect on LinkedIn/);
   assert.match(source, /https:\/\/github\.com\/Andreasniss\/runbook-relay-webmcp/);
   assert.match(source, /Source on GitHub/);
 });
