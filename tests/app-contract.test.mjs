@@ -63,6 +63,9 @@ test("keeps universal creator, portfolio, LinkedIn, and source attribution visib
   assert.match(source, /Connect on LinkedIn/);
   assert.match(source, /https:\/\/github\.com\/Andreasniss\/runbook-relay-webmcp/);
   assert.match(source, /Source on GitHub/);
+  assert.match(source, /Personal demo project/);
+  assert.match(source, /Views and opinions are my own/);
+  assert.match(source, /Not affiliated with or endorsed by my employer/);
 });
 
 test("renders the production application", async () => {
