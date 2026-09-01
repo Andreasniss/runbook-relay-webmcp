@@ -267,22 +267,35 @@ export async function getControlPlaneSnapshot(
   identityLabel: string,
   now = new Date().toISOString(),
 ) {
-  const session = await ensureSession(db, sessionKey, identityLabel, now);
-  const approval = await getCurrentApproval(db, session);
-  const [receiptResult, receiptCount, latestExecution] = await Promise.all([
+  await ensureSession(db, sessionKey, identityLabel, now);
+  const [sessionRead, approvalRead, receiptResult, receiptCountRead, executionRead] = await db.batch([
+    db.prepare("SELECT * FROM control_sessions WHERE session_key = ?")
+      .bind(sessionKey),
+    db.prepare(`
+      SELECT a.* FROM approvals a
+      JOIN control_sessions s ON s.session_key = a.session_key
+      WHERE s.session_key = ?
+        AND a.action_digest = s.action_digest
+        AND a.resource_version = s.resource_version
+      ORDER BY a.approved_at DESC LIMIT 1
+    `).bind(sessionKey),
     db.prepare(`
       SELECT * FROM receipts WHERE session_key = ?
-      ORDER BY created_at DESC, rowid DESC LIMIT 101
-    `).bind(sessionKey).all<ReceiptRow>(),
+      ORDER BY rowid DESC LIMIT 101
+    `).bind(sessionKey),
     db.prepare("SELECT COUNT(*) AS total FROM receipts WHERE session_key = ?")
-      .bind(sessionKey)
-      .first<{ total: number }>(),
+      .bind(sessionKey),
     db.prepare(`
       SELECT * FROM executions WHERE session_key = ?
-      ORDER BY created_at DESC, rowid DESC LIMIT 1
-    `).bind(sessionKey).first<ExecutionRow>(),
+      ORDER BY rowid DESC LIMIT 1
+    `).bind(sessionKey),
   ]);
-  const receiptWindow = receiptResult.results.toReversed().map(mapReceipt);
+  const session = sessionRead.results[0] as SessionRow | undefined;
+  if (!session) throw new ControlPlaneError("session_unavailable", "The durable session could not be read.", 500);
+  const approval = approvalRead.results[0] as ApprovalRow | undefined;
+  const receiptCount = receiptCountRead.results[0] as { total: number } | undefined;
+  const latestExecution = executionRead.results[0] as ExecutionRow | undefined;
+  const receiptWindow = (receiptResult.results as ReceiptRow[]).toReversed().map(mapReceipt);
   const anchor = receiptWindow.length > 100 ? receiptWindow[0] : null;
   const receipts = anchor ? receiptWindow.slice(1) : receiptWindow;
   const activeApproval = Boolean(
@@ -585,6 +598,37 @@ async function blockExecution(
   throw new ControlPlaneError(code, message, status);
 }
 
+async function returnIdempotentReplay(
+  db: D1Database,
+  sessionKey: string,
+  identityLabel: string,
+  actorChannel: ActorChannel,
+  expected: { actionDigest: string; resourceVersion: number; idempotencyKey: string },
+  execution: ExecutionRow,
+  now: string,
+) {
+  const guard = evaluateExecutionGuard({
+    session: {},
+    approval: null,
+    existingExecution: { actionDigest: execution.action_digest, resourceVersion: execution.resource_version },
+    expected,
+    identityLabel,
+    now,
+  });
+  if (guard.decision === "blocked") {
+    return blockExecution(db, sessionKey, identityLabel, actorChannel, expected, "idempotency_conflict", "The idempotency key is already bound to another action digest or resource version.", 409, now);
+  }
+  const result = { ...parseStoredJson(execution.result_json) as Record<string, unknown>, replayed: true };
+  return recordToolObservation(db, sessionKey, identityLabel, {
+    tool: "execute_approved_mitigation",
+    event: "Idempotent replay returned",
+    actorChannel,
+    request: expected,
+    result,
+    detail: "The prior execution result was returned without applying the synthetic action again.",
+  }, now);
+}
+
 export async function executeMitigation(
   db: D1Database,
   sessionKey: string,
@@ -598,26 +642,7 @@ export async function executeMitigation(
     SELECT * FROM executions WHERE session_key = ? AND idempotency_key = ? LIMIT 1
   `).bind(sessionKey, expected.idempotencyKey).first<ExecutionRow>();
   if (existing) {
-    const guard = evaluateExecutionGuard({
-      session: {},
-      approval: null,
-      existingExecution: { actionDigest: existing.action_digest, resourceVersion: existing.resource_version },
-      expected,
-      identityLabel,
-      now,
-    });
-    if (guard.decision === "blocked") {
-      return blockExecution(db, sessionKey, identityLabel, actorChannel, expected, "idempotency_conflict", "The idempotency key is already bound to another action digest or resource version.", 409, now);
-    }
-    const result = { ...parseStoredJson(existing.result_json) as Record<string, unknown>, replayed: true };
-    return recordToolObservation(db, sessionKey, identityLabel, {
-      tool: "execute_approved_mitigation",
-      event: "Idempotent replay returned",
-      actorChannel,
-      request: expected,
-      result,
-      detail: "The prior execution result was returned without applying the synthetic action again.",
-    }, now);
+    return returnIdempotentReplay(db, sessionKey, identityLabel, actorChannel, expected, existing, now);
   }
 
   const session = await ensureSession(db, sessionKey, identityLabel, now);
@@ -707,6 +732,7 @@ export async function executeMitigation(
       .bind(executionId)
       .first<ExecutionRow>();
     if (!raced) throw new ControlPlaneError("execution_conflict", "The control state changed before execution. Refresh before retrying.", 409);
+    return returnIdempotentReplay(db, sessionKey, identityLabel, actorChannel, expected, raced, now);
   }
   return getControlPlaneSnapshot(db, sessionKey, identityLabel, now);
 }

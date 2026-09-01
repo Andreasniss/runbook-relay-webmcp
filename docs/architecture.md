@@ -67,7 +67,7 @@ The exact replay returns the stored execution result. Reusing a key for a differ
 
 ## Receipt chain
 
-Each receipt hash covers canonical JSON containing its session, event, caller channel and identity, outcome, input, result, detail, action digest, resource version, previous hash, and timestamp. The snapshot API returns the latest 100 receipts plus one anchor when needed. It recomputes content hashes and verifies every link in that returned segment; total count, truncation, and head are reported separately.
+Each receipt hash covers canonical JSON containing its session, event, caller channel and identity, outcome, input, result, detail, action digest, resource version, previous hash, and timestamp. The snapshot API reads session state, its matching approval, executions, receipts, and receipt count in one transactional D1 batch. It returns the latest 100 receipts plus one anchor in insertion order when needed, recomputes content hashes, and verifies every link in that returned segment; total count, truncation, and head are reported separately.
 
 This detects modification inside the verified segment. It does not provide a signature, trusted timestamp, or external transparency anchor.
 

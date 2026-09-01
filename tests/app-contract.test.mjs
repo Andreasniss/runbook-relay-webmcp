@@ -37,13 +37,16 @@ test("execution fails closed at the durable server boundary", () => {
   assert.match(controlSource, /createActionDigest/);
   assert.match(controlSource, /createIdempotencyKey/);
   assert.match(controlSource, /INSERT OR IGNORE INTO executions/);
-  assert.match(controlSource, /resourceVersion: existing\.resource_version/);
+  assert.match(controlSource, /resourceVersion: execution\.resource_version/);
   assert.match(controlSource, /replay: latestExecution/);
   assert.match(controlSource, /last_receipt_hash/);
   assert.match(controlSource, /receiptInsertWhenSessionHead/);
   assert.match(controlSource, /ON CONFLICT\(session_key, action_digest, resource_version\) DO UPDATE/);
   assert.match(controlSource, /expected\.receiptHash === receipt\.receiptHash/);
   assert.match(controlSource, /receiptHeadMatches\(receipts, session\.last_receipt_hash\)/);
+  assert.match(controlSource, /const \[sessionRead, approvalRead, receiptResult, receiptCountRead, executionRead\] = await db\.batch/);
+  assert.match(controlSource, /ORDER BY rowid DESC LIMIT 101/);
+  assert.match(controlSource, /return returnIdempotentReplay\(db, sessionKey, identityLabel, actorChannel, expected, raced, now\)/);
   assert.match(routeSource, /invalid_json/);
   assert.match(workerSource, /x-frame-options/);
   assert.match(source, /Approve staged change/);
