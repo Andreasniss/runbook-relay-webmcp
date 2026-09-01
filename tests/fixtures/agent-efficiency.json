@@ -1,0 +1,179 @@
+{
+  "verificationDate": "2026-09-01",
+  "scenario": "blocked-before-approval",
+  "verifiedOutcome": "A mitigation is staged, execution is rejected without human approval, and the rejection is returned as a structured result.",
+  "toolDefinitions": [
+    {
+      "name": "get_incident_snapshot",
+      "description": "Read the active incident, current telemetry, correlated deployment, and approval state. This has no side effects.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "compare_mitigations",
+      "description": "Compare the predicted reliability impact and tradeoffs of safe, predefined mitigations. Optionally focus the page on one option.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mitigationId": {
+            "type": "string",
+            "enum": [
+              "restore-pool",
+              "shift-traffic",
+              "scale-workers"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "stage_mitigation",
+      "description": "Stage one predefined mitigation for visible human review. This never executes the change and always requires approval in the page.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mitigationId": {
+            "type": "string",
+            "enum": [
+              "restore-pool",
+              "shift-traffic",
+              "scale-workers"
+            ]
+          }
+        },
+        "required": [
+          "mitigationId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "execute_approved_mitigation",
+      "description": "Execute the staged mitigation only after the human has explicitly approved it in the page. The page fails closed when approval is absent.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true
+      }
+    },
+    {
+      "name": "reset_incident_simulation",
+      "description": "Reset this deterministic demo to the initial incident state.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    }
+  ],
+  "calls": [
+    {
+      "tool": "get_incident_snapshot",
+      "input": {},
+      "result": {
+        "incident": {
+          "id": "INC-2841",
+          "service": "checkout-api",
+          "severity": "SEV-2",
+          "status": "investigating"
+        },
+        "telemetry": {
+          "p95Latency": "4.8 s",
+          "errorRate": "8.7%",
+          "saturation": "94%"
+        },
+        "correlatedChange": {
+          "id": "db-pool-842",
+          "confidence": 0.93,
+          "change": "max connections 120 to 40"
+        },
+        "control": {
+          "staged": null,
+          "humanApproved": false
+        }
+      },
+      "outcome": "success"
+    },
+    {
+      "tool": "compare_mitigations",
+      "input": {
+        "mitigationId": "restore-pool"
+      },
+      "result": {
+        "current": {
+          "p95Latency": "4.8 s",
+          "errorRate": "8.7%"
+        },
+        "options": [
+          {
+            "id": "restore-pool",
+            "title": "Restore database pool limit",
+            "risk": "Low",
+            "latency": "1.2 s",
+            "errorRate": "0.6%"
+          },
+          {
+            "id": "shift-traffic",
+            "title": "Shift 30% traffic to eu-west-1",
+            "risk": "Medium",
+            "latency": "1.8 s",
+            "errorRate": "1.1%"
+          },
+          {
+            "id": "scale-workers",
+            "title": "Scale API workers to 24",
+            "risk": "Medium",
+            "latency": "3.9 s",
+            "errorRate": "6.4%"
+          }
+        ]
+      },
+      "outcome": "success"
+    },
+    {
+      "tool": "stage_mitigation",
+      "input": {
+        "mitigationId": "restore-pool"
+      },
+      "result": {
+        "staged": {
+          "id": "restore-pool",
+          "title": "Restore database pool limit",
+          "risk": "Low",
+          "latency": "1.2 s",
+          "errorRate": "0.6%"
+        },
+        "requiresHumanApproval": true,
+        "executed": false
+      },
+      "outcome": "success"
+    },
+    {
+      "tool": "execute_approved_mitigation",
+      "input": {},
+      "result": {
+        "executed": false,
+        "reason": "Human approval is required in the page before execution."
+      },
+      "outcome": "blocked"
+    }
+  ],
+  "budgets": {
+    "toolDefinitionBytesMax": 2400,
+    "workflowResultBytesMax": 1800,
+    "toolCallsMax": 4
+  }
+}

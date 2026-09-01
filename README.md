@@ -7,7 +7,7 @@ Runbook Relay is a deterministic incident-response control room where a human an
 
 **[Open the live demo](https://runbook-relay-webmcp.andreas-nissen.chatgpt.site)** · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md)
 
-**Verified 31 August 2026:** production build and lint pass; all 7 contract tests pass; the public path remains deterministic and changes no external system.
+**Verified 1 September 2026:** production build and lint pass; all 10 contract tests pass; the public path remains deterministic and changes no external system. The agent-facing definitions and the blocked-before-approval workflow also pass an explicit structural efficiency budget.
 
 > This independent portfolio project was inspired by OpenAI's [WebMCP Challenge](https://openai.com/webmcp-challenge/). It is not a challenge submission and is not affiliated with or endorsed by OpenAI.
 
@@ -25,9 +25,9 @@ Runbook Relay is a deterministic incident-response control room where a human an
 | Human-only approval | No approval tool exists; pre-approval execution fails closed |
 | Observable behavior | Inputs, results, caller, outcome, and audit events remain visible |
 | Deterministic fixture | The full scenario is repeatable and changes no external system |
-| Automated gate | CI lints, builds, renders the worker, and checks the safety contract |
+| Automated gate | CI lints, builds, renders the worker, and checks the safety and agent-interface budgets |
 
-The companion article, [Screen Use vs WebMCP: What Changes When an Agent Gets Governed Tools](https://andreasnissen.dev/writing/screen-use-vs-webmcp/), separates the structural proof in this repository from the browser and model benchmark that has not yet been run.
+The companion articles cover [governed interface design](https://andreasnissen.dev/writing/screen-use-vs-webmcp/) and [the complete cost of an agent tool path](https://andreasnissen.dev/writing/hidden-token-tax-agent-tools/). They separate the structural proof in this repository from the browser and model benchmark that has not yet been run.
 
 ## Why this is a WebMCP fit
 
@@ -95,9 +95,12 @@ For local WebMCP testing in Chrome, enable `chrome://flags/#enable-webmcp-testin
 ```bash
 npm run lint
 npm test
+npm run measure:agent
 ```
 
-`npm test` performs a production build, exercises the rendered worker, and checks the WebMCP contract for explicit schemas, read-only hints, a destructive hint, visible approval, and fail-closed execution.
+`npm test` performs a production build, exercises the rendered worker, and checks the WebMCP contract for explicit schemas, read-only hints, a destructive hint, visible approval, fail-closed execution, and bounded agent-interface fixtures.
+
+`npm run measure:agent` reports the UTF-8 size of the five tool definitions and the inputs and structured results for the deterministic blocked-before-approval workflow. The [measurement note](docs/agent-efficiency.md) explains why this is a tokenizer-independent regression guard, not a model benchmark.
 
 ## Architecture and boundaries
 
