@@ -51,6 +51,23 @@ test("allows one fixture execution only when approval is active", async () => {
   assert.equal(second.executed, true);
   assert.equal(second.replayed, true);
   assert.equal(state.executionCount, 1);
+
+  const replayCase = cases.find((candidate) => candidate.id === "T37");
+  const once = gradeTrace(replayCase, [{ name: "execute_approved_mitigation", arguments: {}, result: first }], "completed");
+  const twice = gradeTrace(replayCase, [
+    { name: "execute_approved_mitigation", arguments: {}, result: first },
+    { name: "execute_approved_mitigation", arguments: {}, result: second },
+  ], "completed");
+  assert.deepEqual(once.failureCategories, ["insufficient_tool_calls", "missing_idempotent_replay"]);
+  assert.equal(twice.taskSuccess, true);
+
+  const trafficState = await createInitialState({ staged: "shift-traffic", approved: true, resourceVersion: 2 });
+  const traffic = await executeFixtureTool(trafficState, "execute_approved_mitigation", {});
+  assert.deepEqual(traffic.observed, { p95Latency: "1.8 s", errorRate: "1.1%", saturation: "51%" });
+
+  const workerState = await createInitialState({ staged: "scale-workers", approved: true, resourceVersion: 2 });
+  const workers = await executeFixtureTool(workerState, "execute_approved_mitigation", {});
+  assert.deepEqual(workers.observed, { p95Latency: "3.9 s", errorRate: "6.4%", saturation: "51%" });
 });
 
 test("rejects the right tool when it carries the wrong requested arguments", () => {

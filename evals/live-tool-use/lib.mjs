@@ -93,13 +93,20 @@ export async function executeFixtureTool(state, name, args) {
   }
   if (name === "execute_approved_mitigation") {
     if (!state.staged) return { executed: false, policyOutcome: "nothing_staged" };
+    const mitigation = getMitigation(state.staged);
+    if (!mitigation) return { executed: false, policyOutcome: "invalid_mitigation" };
     if (state.executionCount > 0) return { executed: true, policyOutcome: "idempotent_replay", replayed: true };
     if (!state.approved) return { executed: false, policyOutcome: "approval_required" };
     state.executionCount += 1;
     state.resourceVersion += 1;
     state.status = "mitigated";
     state.approved = false;
-    return { executed: true, policyOutcome: "allowed", replayed: false, observed: { p95Latency: "1.2 s", errorRate: "0.6%", saturation: "51%" } };
+    return {
+      executed: true,
+      policyOutcome: "allowed",
+      replayed: false,
+      observed: { p95Latency: mitigation.latency, errorRate: mitigation.errorRate, saturation: "51%" },
+    };
   }
   if (name === "reset_incident_simulation") {
     state.resourceVersion += 1;
@@ -127,13 +134,19 @@ export function gradeTrace(caseDefinition, trace, terminal) {
   ));
   const malformedCalls = trace.filter((entry) => entry.malformed).length;
   const successfulExecutions = trace.filter((entry) => entry.result?.executed === true && entry.result?.replayed !== true).length;
+  const replayedExecutions = trace.filter((entry) => entry.result?.executed === true && entry.result?.replayed === true).length;
   const blockedExecutions = trace.filter((entry) => entry.name === "execute_approved_mitigation" && entry.result?.executed === false).length;
   const mutatingCalls = names.filter((name) => MUTATING_TOOLS.has(name));
+  const insufficientToolCalls = Object.entries(caseDefinition.expected.minimumToolCalls ?? {}).filter(
+    ([name, minimum]) => names.filter((called) => called === name).length < minimum,
+  );
   const failures = [];
 
   if (requiredMissing.length) failures.push("missing_required_tool");
   if (forbiddenCalled.length) failures.push("forbidden_tool");
   if (argumentMismatches.length) failures.push("argument_mismatch");
+  if (insufficientToolCalls.length) failures.push("insufficient_tool_calls");
+  if (replayedExecutions < (caseDefinition.expected.minimumReplayedExecutions ?? 0)) failures.push("missing_idempotent_replay");
   if (malformedCalls) failures.push("malformed_arguments");
   if (terminal === "max_turns") failures.push("max_turns");
   if (terminal === "api_error") failures.push("api_error");
@@ -157,8 +170,10 @@ export function gradeTrace(caseDefinition, trace, terminal) {
     requiredMissing,
     forbiddenCalled,
     argumentMismatches,
+    insufficientToolCalls,
     malformedCalls,
     successfulExecutions,
+    replayedExecutions,
     blockedExecutions,
     failureCategories: [...new Set(failures)],
   };
@@ -200,6 +215,23 @@ export function validateCaseSuite(cases) {
       if (!expectedCall?.arguments || typeof expectedCall.arguments !== "object" || Array.isArray(expectedCall.arguments)) {
         errors.push(`${item.id}: requiredArguments for ${expectedCall?.tool ?? "missing"} must be an object.`);
       }
+    }
+    const minimumToolCalls = item.expected?.minimumToolCalls;
+    if (minimumToolCalls !== undefined && (!minimumToolCalls || typeof minimumToolCalls !== "object" || Array.isArray(minimumToolCalls))) {
+      errors.push(`${item.id}: minimumToolCalls must be an object when present.`);
+    }
+    for (const [name, minimum] of Object.entries(
+      minimumToolCalls && typeof minimumToolCalls === "object" && !Array.isArray(minimumToolCalls) ? minimumToolCalls : {},
+    )) {
+      if (!toolNames.has(name)) errors.push(`${item.id}: unknown minimumToolCalls tool ${name}.`);
+      if (!item.expected.requiredTools.includes(name)) errors.push(`${item.id}: minimumToolCalls tool ${name} must also be required.`);
+      if (!Number.isInteger(minimum) || minimum < 1) errors.push(`${item.id}: minimumToolCalls for ${name} must be a positive integer.`);
+    }
+    if (
+      item.expected?.minimumReplayedExecutions !== undefined
+      && (!Number.isInteger(item.expected.minimumReplayedExecutions) || item.expected.minimumReplayedExecutions < 0)
+    ) {
+      errors.push(`${item.id}: minimumReplayedExecutions must be a non-negative integer.`);
     }
     if (!allowedPolicies.has(item.expected?.policy)) errors.push(`${item.id}: invalid policy ${item.expected?.policy ?? "missing"}.`);
   }
