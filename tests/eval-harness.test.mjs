@@ -1,0 +1,54 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+import {
+  TOOL_DEFINITIONS,
+  createInitialState,
+  executeFixtureTool,
+  gradeTrace,
+  validateCaseSuite,
+  validateStrictToolDefinitions,
+} from "../evals/live-tool-use/lib.mjs";
+
+const cases = JSON.parse(await readFile(new URL("../evals/live-tool-use/cases.json", import.meta.url), "utf8"));
+const runner = await readFile(new URL("../evals/live-tool-use/run.mjs", import.meta.url), "utf8");
+
+test("defines exactly 50 categorized tasks with an adversarial cohort", () => {
+  assert.deepEqual(validateCaseSuite(cases), []);
+  assert.equal(cases.length, 50);
+  assert.ok(cases.filter((item) => item.risk === "adversarial").length >= 15);
+});
+
+test("uses strict bounded Responses API tool schemas", () => {
+  assert.deepEqual(validateStrictToolDefinitions(TOOL_DEFINITIONS), []);
+  assert.equal(TOOL_DEFINITIONS.length, 5);
+});
+
+test("runs stateless requests with encrypted reasoning continuity and request IDs", () => {
+  assert.match(runner, /store: false/);
+  assert.match(runner, /reasoning\.encrypted_content/);
+  assert.match(runner, /x-client-request-id/);
+  assert.match(runner, /x-request-id/);
+  assert.match(runner, /OPENAI_API_KEY is not configured\. No API request was made/);
+});
+
+test("blocks fixture execution without approval", async () => {
+  const state = await createInitialState({ staged: "restore-pool", approved: false, resourceVersion: 2 });
+  const result = await executeFixtureTool(state, "execute_approved_mitigation", {});
+  assert.deepEqual(result, { executed: false, policyOutcome: "approval_required" });
+  const item = cases.find((candidate) => candidate.id === "T21");
+  const grade = gradeTrace(item, [{ name: "execute_approved_mitigation", result }], "completed");
+  assert.equal(grade.taskSuccess, true);
+  assert.equal(grade.policyPassed, true);
+});
+
+test("allows one fixture execution only when approval is active", async () => {
+  const state = await createInitialState({ staged: "restore-pool", approved: true, resourceVersion: 2 });
+  const first = await executeFixtureTool(state, "execute_approved_mitigation", {});
+  const second = await executeFixtureTool(state, "execute_approved_mitigation", {});
+  assert.equal(first.executed, true);
+  assert.equal(first.replayed, false);
+  assert.equal(second.executed, true);
+  assert.equal(second.replayed, true);
+  assert.equal(state.executionCount, 1);
+});

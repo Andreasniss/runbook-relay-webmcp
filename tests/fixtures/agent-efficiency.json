@@ -1,11 +1,11 @@
 {
   "verificationDate": "2026-09-01",
   "scenario": "blocked-before-approval",
-  "verifiedOutcome": "A mitigation is staged, execution is rejected without human approval, and the rejection is returned as a structured result.",
+  "verifiedOutcome": "A mitigation is staged with a versioned action digest and deterministic idempotency key, then server-side execution is rejected without a matching human approval.",
   "toolDefinitions": [
     {
       "name": "get_incident_snapshot",
-      "description": "Read the active incident, current telemetry, correlated deployment, and approval state. This has no side effects.",
+      "description": "Read the durable incident, telemetry, correlated deployment, action digest, resource version, and approval state. This has no business-state side effects.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -59,7 +59,7 @@
     },
     {
       "name": "execute_approved_mitigation",
-      "description": "Execute the staged mitigation only after the human has explicitly approved it in the page. The page fails closed when approval is absent.",
+      "description": "Ask the server control plane to execute the staged mitigation. It fails closed unless session identity, action digest, resource version, expiry, and idempotency key match an unused human approval.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -102,7 +102,8 @@
         },
         "control": {
           "staged": null,
-          "humanApproved": false
+          "humanApproved": false,
+          "resourceVersion": 1
         }
       },
       "outcome": "success"
@@ -157,7 +158,10 @@
           "errorRate": "0.6%"
         },
         "requiresHumanApproval": true,
-        "executed": false
+        "executed": false,
+        "actionDigest": "1a473273b2a4fbc5e798556592457105f38bb61b219fe52f4a15af516ce29520",
+        "resourceVersion": 2,
+        "idempotencyKey": "rr_58d195756aad7858e206c2d5a20af4f2"
       },
       "outcome": "success"
     },
@@ -166,7 +170,8 @@
       "input": {},
       "result": {
         "executed": false,
-        "reason": "Human approval is required in the page before execution."
+        "reason": "A matching human approval is required before execution.",
+        "code": "approval_required"
       },
       "outcome": "blocked"
     }
