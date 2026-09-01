@@ -5,11 +5,17 @@ Runbook Relay is a deterministic incident-response control room where a human an
 [![CI](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-77e6ae.svg)](LICENSE)
 
-**[Open the live demo](https://runbook-relay-webmcp.andreas-nissen.chatgpt.site)** · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md)
+**[Open the current live demo](https://runbook-relay-webmcp.andreas-nissen.chatgpt.site)** · [Owned-domain migration](docs/hosting.md) · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md)
 
-**Verified 1 September 2026:** production build and lint pass; all 10 contract tests pass; the public path remains deterministic and changes no external system. The agent-facing definitions and the blocked-before-approval workflow also pass an explicit structural efficiency budget.
+**Verified 1 September 2026:** production build and lint pass; all 11 contract tests pass; the public path remains deterministic and changes no external system. The agent-facing definitions and the blocked-before-approval workflow also pass an explicit structural efficiency budget.
 
 > This independent portfolio project was inspired by OpenAI's [WebMCP Challenge](https://openai.com/webmcp-challenge/). It is not a challenge submission and is not affiliated with or endorsed by OpenAI.
+
+The canonical interactive URL is moving to
+`https://runbook-relay.andreasnissen.dev` on Cloudflare Workers. The owned-domain
+deployment contract is committed, while the verified ChatGPT Sites URL above
+remains the live fallback until Cloudflare authentication, DNS, TLS, and behavior
+checks pass. See the [hosting decision and migration runbook](docs/hosting.md).
 
 ## Review it in three minutes
 
@@ -89,6 +95,19 @@ npm run dev
 ```
 
 For local WebMCP testing in Chrome, enable `chrome://flags/#enable-webmcp-testing` and relaunch the browser. The app also works as a normal browser-based simulation when WebMCP is unavailable.
+
+## Deployment
+
+The application builds to Cloudflare-compatible Worker and static-asset output.
+The production target is the owned custom domain
+`runbook-relay.andreasnissen.dev`; the current ChatGPT Sites deployment remains a
+temporary verified fallback during migration.
+
+Cloudflare deployment is manual during bootstrap and requires an explicitly
+scoped API token and account ID in the protected GitHub environment. The
+[hosting runbook](docs/hosting.md) records the cost guardrail, deployment checks,
+cutover rule, and rollback path. No Cloudflare credential belongs in this
+repository.
 
 ## Quality gates
 

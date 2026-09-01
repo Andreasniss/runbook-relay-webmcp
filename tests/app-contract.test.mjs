@@ -68,6 +68,23 @@ test("keeps universal creator, portfolio, LinkedIn, and source attribution visib
   assert.match(source, /Not affiliated with or endorsed by my employer/);
 });
 
+test("builds the reviewed owned-domain deployment contract", async () => {
+  const generatedConfig = JSON.parse(
+    await readFile(new URL("../dist/server/wrangler.json", import.meta.url), "utf8"),
+  );
+
+  assert.equal(generatedConfig.name, "runbook-relay");
+  assert.equal(generatedConfig.compatibility_date, "2026-09-01");
+  assert.deepEqual(generatedConfig.routes, [
+    {
+      pattern: "runbook-relay.andreasnissen.dev",
+      custom_domain: true,
+    },
+  ]);
+  assert.equal(generatedConfig.assets.directory, "../client");
+  assert.equal(generatedConfig.observability.enabled, true);
+});
+
 test("renders the production application", async () => {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
