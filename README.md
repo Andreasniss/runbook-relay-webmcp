@@ -61,6 +61,16 @@ The agent cannot approve its own change. `execute_approved_mitigation` fails clo
 
 The implementation uses the imperative `document.modelContext.registerTool()` API in the top-level page. Tool inputs are bounded by JSON Schema, execution reuses the same React state transitions as the human controls, and every meaningful action enters the visible decision log.
 
+### Standard surface and optional compatibility
+
+Runbook Relay separates the standard browser surface from compatibility and transport layers:
+
+- **Implemented:** the page registers five tools directly through `document.modelContext`; execution stays in the open page and registrations are removed through an `AbortController`.
+- **Not bundled:** an MCP-B polyfill or extended runtime. Native support remains observable instead of being silently replaced.
+- **Future evaluation:** an iframe, extension, or local-relay bridge could expose the same page tools to Claude Desktop, Cursor, or another MCP client. Any such result would be labeled MCP-B compatibility, not native WebMCP support.
+
+The [architecture note](docs/architecture.md) explains the layering. The [threat model](docs/threat-model.md) records the origin, sender-identity, relay-exposure, and session-isolation controls required before adding a bridge.
+
 ## Guided demo
 
 The live app detects native WebMCP support and shows one of three explicit states: active, unavailable, or registration failed. When native support is available, run the prompts in the browser agent controlling the open page.
@@ -147,6 +157,8 @@ See [SECURITY.md](SECURITY.md) for responsible reporting guidance.
 - [OpenAI Site tools documentation](https://learn.chatgpt.com/docs/webmcp)
 - [WebMCP explainer and specification work](https://github.com/webmachinelearning/webmcp)
 - [Chrome WebMCP documentation](https://developer.chrome.com/docs/ai/webmcp)
+- [MCP-B runtime layering](https://docs.mcp-b.ai/explanation/architecture/runtime-layering)
+- [MCP-B transports and bridges](https://docs.mcp-b.ai/explanation/architecture/transports-and-bridges)
 
 ## License
 

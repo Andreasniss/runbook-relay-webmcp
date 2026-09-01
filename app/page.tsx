@@ -70,6 +70,8 @@ const webMcpResources = [
   { title: "WebMCP on GitHub", description: "Explainers, examples, issues, and the public standards discussion.", href: "https://github.com/webmachinelearning/webmcp", label: "Open source" },
   { title: "Chrome developer guide", description: "Chrome 149+ origin-trial and local experimental-flag instructions for WebMCP.", href: "https://developer.chrome.com/docs/ai/webmcp", label: "Browser implementation" },
   { title: "WebMCP app showcase", description: "Examples of websites designed for people and agents to use together.", href: "https://developers.openai.com/showcase?view=webmcp-apps", label: "Examples" },
+  { title: "MCP-B runtime layering", description: "A practical separation of the standard page API, optional compatibility runtime, and transport bridges.", href: "https://docs.mcp-b.ai/explanation/architecture/runtime-layering", label: "Compatibility architecture" },
+  { title: "MCP-B transports and bridges", description: "Security boundaries for iframe, extension, and local-relay paths that expose page tools to other clients.", href: "https://docs.mcp-b.ai/explanation/architecture/transports-and-bridges", label: "Bridge security" },
 ];
 
 const actorIcon = { agent: Bot, human: UserCheck, system: TerminalSquare, simulator: FlaskConical };
@@ -308,6 +310,12 @@ export default function Home() {
             <span><Laptop size={16} /> This live page</span><ChevronRight size={15} /><span><Wrench size={16} /> Five scoped tools</span><ChevronRight size={15} /><span><Bot size={16} /> Compatible agent</span><ChevronRight size={15} /><span><UserCheck size={16} /> Human approval</span>
           </div>
           <small>Unlike traditional MCP, these tools belong to the open browser page and share its current state and session. No separate MCP server is required for this demo.</small>
+          <div className="runtime-layers" aria-label="WebMCP runtime layers">
+            <div><span>Implemented</span><strong>Standard page API</strong><small><code>document.modelContext</code> registers and removes five tools inside this page.</small></div>
+            <div><span>Optional</span><strong>Compatibility runtime</strong><small>A polyfill can supply the page API where a browser does not yet provide it.</small></div>
+            <div><span>Future evaluation</span><strong>Transport bridge</strong><small>An iframe, extension, or local relay can connect page tools to external MCP clients.</small></div>
+          </div>
+          <p className="layer-boundary">Runbook Relay ships only the standard page layer. It does not bundle MCP-B or claim that Claude Desktop, Cursor, or a relay path has been tested.</p>
         </div>
 
         <div className="setup-card">

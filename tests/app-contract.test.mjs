@@ -16,6 +16,9 @@ test("declares bounded schemas and tool safety hints", () => {
   assert.match(source, /readOnlyHint: true/);
   assert.match(source, /destructiveHint: true/);
   assert.match(source, /requiresHumanApproval: true/);
+  assert.match(source, /new AbortController\(\)/);
+  assert.match(source, /signal: controller\.signal/);
+  assert.match(source, /return \(\) => controller\.abort\(\)/);
 });
 
 test("execution fails closed without page approval", () => {
@@ -53,6 +56,12 @@ test("explains WebMCP and links primary learning resources", () => {
   assert.match(source, /https:\/\/github\.com\/webmachinelearning\/webmcp/);
   assert.match(source, /https:\/\/developer\.chrome\.com\/docs\/ai\/webmcp/);
   assert.match(source, /WebMCP app showcase/);
+  assert.match(source, /Standard page API/);
+  assert.match(source, /Compatibility runtime/);
+  assert.match(source, /Transport bridge/);
+  assert.match(source, /does not bundle MCP-B/);
+  assert.match(source, /docs\.mcp-b\.ai\/explanation\/architecture\/runtime-layering/);
+  assert.match(source, /docs\.mcp-b\.ai\/explanation\/architecture\/transports-and-bridges/);
 });
 
 test("keeps universal creator, portfolio, LinkedIn, and source attribution visible", () => {
