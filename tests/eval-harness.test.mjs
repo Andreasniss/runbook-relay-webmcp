@@ -29,6 +29,8 @@ test("runs stateless requests with encrypted reasoning continuity and request ID
   assert.match(runner, /reasoning\.encrypted_content/);
   assert.match(runner, /x-client-request-id/);
   assert.match(runner, /x-request-id/);
+  assert.match(runner, /performance\.now\(\) - requestStartedAt/);
+  assert.match(runner, /latencyMs \+= error\.latencyMs/);
   assert.match(runner, /OPENAI_API_KEY is not configured\. No API request was made/);
   assert.match(runner, /error instanceof NonRetryableApiError/);
   assert.match(runner, /terminal = "api_error"/);

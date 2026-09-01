@@ -8,6 +8,7 @@ import {
   deriveTelemetry,
   evaluateExecutionGuard,
   getMitigation,
+  mitigationMeetsTargets,
   parseStoredJson,
   receiptHeadMatches,
   sha256Hex,
@@ -16,7 +17,7 @@ import {
 
 type ActorChannel = "native" | "simulator" | "human" | "system";
 type ReceiptOutcome = "success" | "blocked" | "error" | "partial_failure";
-type IncidentStatus = "investigating" | "awaiting-approval" | "mitigated" | "recovery-required";
+type IncidentStatus = "investigating" | "awaiting-approval" | "mitigated" | "monitoring" | "recovery-required";
 
 type SessionRow = {
   session_key: string;
@@ -677,24 +678,29 @@ export async function executeMitigation(
   const executionId = (await sha256Hex(`execution:${sessionKey}:${expected.idempotencyKey}`)).slice(0, 32);
   const nextVersion = session.resource_version + 1;
   const executed = syntheticOutcome === "success";
+  const serviceRecovered = executed && mitigationMeetsTargets(mitigation);
   const result = buildSyntheticExecutionResult(mitigation, syntheticOutcome);
   const receipt = await createReceipt({
     sessionKey,
     kind: "tool",
     tool: "execute_approved_mitigation",
-    event: executed ? "Mitigation executed" : "Partial failure recorded",
+    event: executed ? "Mitigation applied" : "Partial failure recorded",
     actorChannel,
     actorIdentity: identityLabel,
     outcome: syntheticOutcome,
     input: expected,
     result,
-    detail: executed ? `${mitigation.title}. Synthetic service health returned within target.` : `${mitigation.title} produced a synthetic partial failure and entered recovery-required state.`,
+    detail: !executed
+      ? `${mitigation.title} produced a synthetic partial failure and entered recovery-required state.`
+      : serviceRecovered
+        ? `${mitigation.title}. Synthetic service health returned within target.`
+        : `${mitigation.title}. The synthetic action applied, but service health remained outside target and entered monitoring state.`,
     actionDigest: session.action_digest,
     resourceVersion: nextVersion,
     previousHash: session.last_receipt_hash,
     createdAt: now,
   });
-  const nextStatus: IncidentStatus = executed ? "mitigated" : "recovery-required";
+  const nextStatus: IncidentStatus = !executed ? "recovery-required" : serviceRecovered ? "mitigated" : "monitoring";
 
   const [executionInsert, , stateUpdate] = await db.batch([
     db.prepare(`

@@ -1,4 +1,4 @@
-import { canonicalJson, createActionDigest, createIdempotencyKey, getMitigation } from "../../lib/control-plane.mjs";
+import { canonicalJson, createActionDigest, createIdempotencyKey, deriveTelemetry, getMitigation, mitigationMeetsTargets } from "../../lib/control-plane.mjs";
 
 export const TOOL_DEFINITIONS = Object.freeze([
   {
@@ -70,9 +70,7 @@ export async function executeFixtureTool(state, name, args) {
   if (name === "get_incident_snapshot") {
     return {
       incident: { id: "INC-2841", status: state.status },
-      telemetry: state.status === "mitigated"
-        ? { p95Latency: "1.2 s", errorRate: "0.6%", saturation: "51%" }
-        : { p95Latency: "4.8 s", errorRate: "8.7%", saturation: "94%" },
+      telemetry: deriveTelemetry(state.status, state.staged),
       control: { staged: state.staged, humanApproved: state.approved, resourceVersion: state.resourceVersion, actionDigest: state.actionDigest },
     };
   }
@@ -99,12 +97,13 @@ export async function executeFixtureTool(state, name, args) {
     if (!state.approved) return { executed: false, policyOutcome: "approval_required" };
     state.executionCount += 1;
     state.resourceVersion += 1;
-    state.status = "mitigated";
+    state.status = mitigationMeetsTargets(mitigation) ? "mitigated" : "monitoring";
     state.approved = false;
     return {
       executed: true,
       policyOutcome: "allowed",
       replayed: false,
+      serviceRecovered: mitigationMeetsTargets(mitigation),
       observed: { p95Latency: mitigation.latency, errorRate: mitigation.errorRate, saturation: "51%" },
     };
   }

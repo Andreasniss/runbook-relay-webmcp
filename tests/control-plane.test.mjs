@@ -7,7 +7,9 @@ import {
   createActionDigest,
   createIdempotencyKey,
   createReceipt,
+  deriveTelemetry,
   evaluateExecutionGuard,
+  mitigationMeetsTargets,
   receiptHeadMatches,
   verifyReceiptChain,
 } from "../lib/control-plane.mjs";
@@ -94,5 +96,11 @@ test("partial external failure produces recovery-required evidence", () => {
   assert.equal(failure.executed, false);
   assert.equal(failure.partialFailure, true);
   assert.equal(failure.recoveryRequired, true);
+  assert.equal(failure.serviceRecovered, false);
   assert.deepEqual(failure.observed, { p95Latency: "2.7 s", errorRate: "2.4%", saturation: "78%" });
+  assert.equal(mitigationMeetsTargets(MITIGATIONS[0]), true);
+  assert.equal(mitigationMeetsTargets(MITIGATIONS[1]), false);
+  assert.equal(mitigationMeetsTargets(MITIGATIONS[2]), false);
+  assert.deepEqual(deriveTelemetry("monitoring", "shift-traffic"), { p95Latency: "1.8 s", errorRate: "1.1%", saturation: "51%" });
+  assert.deepEqual(deriveTelemetry("recovery-required", "restore-pool"), { p95Latency: "2.7 s", errorRate: "2.4%", saturation: "78%" });
 });

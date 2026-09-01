@@ -15,7 +15,7 @@ import {
 import { MITIGATIONS } from "@/lib/control-plane.mjs";
 
 type MitigationId = "restore-pool" | "shift-traffic" | "scale-workers";
-type IncidentStatus = "investigating" | "awaiting-approval" | "mitigated" | "recovery-required";
+type IncidentStatus = "investigating" | "awaiting-approval" | "mitigated" | "monitoring" | "recovery-required";
 type ToolStatus = "detecting" | "active" | "unavailable" | "failed";
 type ControlStatus = "connecting" | "ready" | "failed";
 type Actor = "native" | "human" | "system" | "simulator";
@@ -140,17 +140,17 @@ export default function Home() {
   const receipts = snapshot.receipts;
   const audit = snapshot.audit;
   const stateRef = useRef(snapshot);
-  const requestSequenceRef = useRef(0);
-  const appliedSequenceRef = useRef(0);
+  const requestQueueRef = useRef<Promise<void>>(Promise.resolve());
 
-  const applySnapshot = useCallback((next: ControlPlaneSnapshot, sequence: number) => {
-    const current = stateRef.current;
-    if (next.control.resourceVersion < current.control.resourceVersion) return false;
-    if (next.control.resourceVersion === current.control.resourceVersion && sequence < appliedSequenceRef.current) return false;
-    appliedSequenceRef.current = Math.max(appliedSequenceRef.current, sequence);
+  const applySnapshot = useCallback((next: ControlPlaneSnapshot) => {
     stateRef.current = next;
     setSnapshot(next);
-    return true;
+  }, []);
+
+  const enqueueControlPlaneRequest = useCallback(<T,>(operation: () => Promise<T>) => {
+    const result = requestQueueRef.current.then(operation, operation);
+    requestQueueRef.current = result.then(() => undefined, () => undefined);
+    return result;
   }, []);
 
   useEffect(() => {
@@ -167,8 +167,7 @@ export default function Home() {
     };
   }, [approvalExpiresAt, snapshot.control.humanApproved]);
 
-  const callControlPlane = useCallback(async (body: Record<string, unknown>) => {
-    const sequence = ++requestSequenceRef.current;
+  const callControlPlane = useCallback((body: Record<string, unknown>) => enqueueControlPlaneRequest(async () => {
     const response = await fetch("/api/control-plane", {
       method: "POST",
       credentials: "same-origin",
@@ -178,35 +177,34 @@ export default function Home() {
     const payload = await response.json() as ControlPlaneSnapshot | { error: { code: string; message: string }; snapshot: ControlPlaneSnapshot | null };
     if (!response.ok && "error" in payload) {
       if (payload.snapshot) {
-        applySnapshot(payload.snapshot, sequence);
+        applySnapshot(payload.snapshot);
       }
       setControlError(payload.error.message);
       throw new ControlPlaneRequestError(payload.error.code, payload.error.message, payload.snapshot);
     }
     const next = payload as ControlPlaneSnapshot;
-    applySnapshot(next, sequence);
+    applySnapshot(next);
     setControlStatus("ready");
     setControlError(null);
     return next;
-  }, [applySnapshot]);
+  }), [applySnapshot, enqueueControlPlaneRequest]);
 
   useEffect(() => {
     const controller = new AbortController();
-    const sequence = ++requestSequenceRef.current;
-    fetch("/api/control-plane", { credentials: "same-origin", signal: controller.signal })
-      .then(async (response) => {
-        const payload = await response.json() as ControlPlaneSnapshot | { error: { message: string } };
-        if (!response.ok || "error" in payload) throw new Error("error" in payload ? payload.error.message : "The control plane is unavailable.");
-        applySnapshot(payload, sequence);
-        setControlStatus("ready");
-      })
+    enqueueControlPlaneRequest(async () => {
+      const response = await fetch("/api/control-plane", { credentials: "same-origin", signal: controller.signal });
+      const payload = await response.json() as ControlPlaneSnapshot | { error: { message: string } };
+      if (!response.ok || "error" in payload) throw new Error("error" in payload ? payload.error.message : "The control plane is unavailable.");
+      applySnapshot(payload);
+      setControlStatus("ready");
+    })
       .catch((error) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setControlStatus("failed");
         setControlError(error instanceof Error ? error.message : "The control plane is unavailable.");
       });
     return () => controller.abort();
-  }, [applySnapshot]);
+  }, [applySnapshot, enqueueControlPlaneRequest]);
 
   const getSnapshot = useCallback(async (actorChannel: Actor = "native") => {
     const next = await callControlPlane({ operation: "snapshot", actorChannel });
@@ -352,6 +350,17 @@ export default function Home() {
     errors: snapshot.telemetry.errorRate,
     saturation: snapshot.telemetry.saturation,
   };
+  const executionApplied = status === "mitigated" || status === "monitoring";
+  const incidentHeading = status === "mitigated"
+    ? "Service recovered"
+    : status === "monitoring"
+      ? "Mitigation applied, SLO still outside target"
+      : status === "recovery-required"
+        ? "Recovery action required"
+        : "Elevated latency and payment errors";
+  const latencyInTarget = Number.parseFloat(currentMetrics.latency) < 1.5;
+  const errorsInTarget = Number.parseFloat(currentMetrics.errors) < 1;
+  const saturationInTarget = Number.parseFloat(currentMetrics.saturation) < 75;
 
   const statusCopy = {
     detecting: { title: "Checking WebMCP support", detail: "Feature detection is running.", tone: "detecting" },
@@ -378,7 +387,7 @@ export default function Home() {
       </header>
 
       <section className="incident-strip" aria-label="Active incident summary">
-        <div className="incident-title"><span className={`status-light ${status}`} /><div><span className="eyebrow">INC-2841 · SEV-2 · CHECKOUT-API</span><h1>{status === "mitigated" ? "Service recovered" : "Elevated latency and payment errors"}</h1></div></div>
+        <div className="incident-title"><span className={`status-light ${status}`} /><div><span className="eyebrow">INC-2841 · SEV-2 · CHECKOUT-API</span><h1>{incidentHeading}</h1></div></div>
         <div className="incident-meta"><span>Started 14:11 UTC</span><span className={`state-pill ${status}`}>{status.replaceAll("-", " ")}</span><button onClick={() => reset()} disabled={controlStatus !== "ready"} aria-label="Reset incident simulation"><RotateCcw size={14} /> Reset</button></div>
       </section>
 
@@ -460,9 +469,9 @@ export default function Home() {
       <section className="workspace">
         <div className="main-column">
           <section className="metric-grid" aria-label="Live service metrics">
-            <Metric label="p95 latency" value={currentMetrics.latency} baseline="Target < 1.5 s" tone={status === "mitigated" ? "good" : "bad"} icon={Gauge} />
-            <Metric label="Error rate" value={currentMetrics.errors} baseline="Target < 1.0%" tone={status === "mitigated" ? "good" : "bad"} icon={AlertTriangle} />
-            <Metric label="DB saturation" value={currentMetrics.saturation} baseline="Target < 75%" tone={status === "mitigated" ? "good" : "warn"} icon={Activity} />
+            <Metric label="p95 latency" value={currentMetrics.latency} baseline="Target < 1.5 s" tone={latencyInTarget ? "good" : "bad"} icon={Gauge} />
+            <Metric label="Error rate" value={currentMetrics.errors} baseline="Target < 1.0%" tone={errorsInTarget ? "good" : "bad"} icon={AlertTriangle} />
+            <Metric label="DB saturation" value={currentMetrics.saturation} baseline="Target < 75%" tone={saturationInTarget ? "good" : "warn"} icon={Activity} />
           </section>
 
           <section className="panel evidence-panel">
@@ -485,11 +494,12 @@ export default function Home() {
             {!staged ? <div className="empty-control"><div className="lock-orbit"><Bot size={21} /><span><UserCheck size={17} /></span></div><strong>No change staged</strong><p>The agent can investigate and simulate. The server requires a matching human approval before execution.</p></div> : <div className="approval-flow">
               <div className="approval-step done"><span><Check size={13} /></span><div><strong>Mitigation staged</strong><small>{staged.title}</small></div></div>
               <div className={`approval-step ${approved ? "done" : "active"}`}><span>{approved ? <Check size={13} /> : "2"}</span><div><strong>Human approval</strong><small>{approved ? `Bound to ${snapshot.session.identity}` : "Required before execution"}</small></div></div>
-              <div className={`approval-step ${status === "mitigated" ? "done" : ""}`}><span>{status === "mitigated" ? <Check size={13} /> : "3"}</span><div><strong>Execute and verify</strong><small>{status === "mitigated" ? "Service recovered" : "Fail-closed until approved"}</small></div></div>
+              <div className={`approval-step ${executionApplied ? "done" : ""}`}><span>{executionApplied ? <Check size={13} /> : "3"}</span><div><strong>Execute and verify</strong><small>{status === "mitigated" ? "Service recovered" : status === "monitoring" ? "Action applied; continue monitoring" : status === "recovery-required" ? "Recovery action required" : "Fail-closed until approved"}</small></div></div>
               <dl className="control-metadata"><div><dt>Resource</dt><dd>v{snapshot.control.resourceVersion}</dd></div><div><dt>Action digest</dt><dd><code>{snapshot.control.actionDigest?.slice(0, 12)}…</code></dd></div><div><dt>Receipt chain</dt><dd>{snapshot.receiptChain.verified ? (snapshot.receiptChain.truncated ? `latest ${snapshot.receiptChain.returned} verified` : `${snapshot.receiptChain.count} verified`) : "verification failed"}</dd></div></dl>
               {!approved && <button className="approve-button" disabled={controlStatus !== "ready"} onClick={approveMitigation}><UserCheck size={16} /> Approve staged change</button>}
               {approved && status !== "mitigated" && <AlertDialog><AlertDialogTrigger asChild><button className="execute-button">Execute approved change</button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Execute this mitigation?</AlertDialogTitle><AlertDialogDescription>{staged.title} is approved for this simulation. The action will update the service state and record an audit event.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => executeMitigation()}>Execute</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
               {status === "mitigated" && <div className="recovered"><Check size={16} /> SLO back within target</div>}
+              {status === "monitoring" && <div className="monitoring-result"><AlertTriangle size={16} /> Action applied; SLO remains outside target</div>}
             </div>}
           </section>
 

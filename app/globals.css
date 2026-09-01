@@ -66,6 +66,7 @@ button { color: inherit; }
 .status-light { width: 10px; height: 10px; background: var(--red); border-radius: 50%; box-shadow: 0 0 0 5px #ff7c7814, 0 0 18px #ff7c7866; }
 .status-light.awaiting-approval { background: var(--amber); box-shadow: 0 0 0 5px #f6bf6714, 0 0 18px #f6bf6766; }
 .status-light.mitigated { background: var(--green); box-shadow: 0 0 0 5px #77e6ae14, 0 0 18px #77e6ae66; }
+.status-light.monitoring { background: var(--amber); box-shadow: 0 0 0 5px #f6bf6714, 0 0 18px #f6bf6766; }
 .status-light.recovery-required { background: var(--amber); box-shadow: 0 0 0 5px #f6bf6714, 0 0 18px #f6bf6766; }
 .eyebrow, .section-kicker { color: #77847e; font: 600 9px/1.3 var(--font-mono); text-transform: uppercase; letter-spacing: .13em; }
 .incident-title h1 { margin: 4px 0 0; font-size: 18px; font-weight: 580; letter-spacing: -.015em; }
@@ -113,6 +114,7 @@ button { color: inherit; }
 .state-pill { text-transform: capitalize; padding: 5px 8px; border: 1px solid #583631; color: var(--red); background: #241614; border-radius: 5px; font: 600 9px var(--font-mono); }
 .state-pill.awaiting-approval { border-color: #5d4a2b; color: var(--amber); background: #231d13; }
 .state-pill.mitigated { border-color: #285e44; color: var(--green); background: #10251b; }
+.state-pill.monitoring { border-color: #5d4a2b; color: var(--amber); background: #231d13; }
 .state-pill.recovery-required { border-color: #5d4a2b; color: var(--amber); background: #231d13; }
 .incident-meta button { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: 0; background: transparent; color: #9aa7a1; cursor: pointer; }
 .control-error { width: min(1480px, calc(100% - 72px)); margin: 14px auto 0; padding: 10px 12px; display: flex; gap: 8px; align-items: center; border: 1px solid #583631; border-radius: 7px; background: #241614; color: #f1aaa7; font-size: 11px; }
@@ -243,6 +245,7 @@ button:disabled { cursor: not-allowed; opacity: .48; transform: none !important;
 .approve-button { display: flex; justify-content: center; align-items: center; gap: 7px; border: 1px solid #416b57; background: #183225; color: var(--green); }
 .execute-button { background: var(--green); color: #07130d; }
 .recovered { padding: 9px; display: flex; align-items: center; justify-content: center; gap: 7px; color: var(--green); background: #143123; border: 1px solid #2b6849; border-radius: 6px; font-size: 10px; font-weight: 650; }
+.monitoring-result { padding: 9px; display: flex; align-items: center; justify-content: center; gap: 7px; color: var(--amber); background: #231d13; border: 1px solid #5d4a2b; border-radius: 6px; font-size: 10px; font-weight: 650; }
 
 .audit-panel { flex: 1; min-height: 250px; }
 .event-count { min-width: 23px; height: 23px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 99px; color: #94a29b; font: 9px var(--font-mono); }

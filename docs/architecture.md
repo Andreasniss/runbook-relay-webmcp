@@ -44,13 +44,17 @@ stateDiagram-v2
   Investigating --> AwaitingApproval: stage catalog action
   AwaitingApproval --> AwaitingApproval: blocked execution
   AwaitingApproval --> Approved: matching page approval
-  Approved --> Mitigated: allowed execution
+  Approved --> Mitigated: applied and within target
+  Approved --> Monitoring: applied but outside target
   Approved --> RecoveryRequired: partial failure
   Mitigated --> Investigating: reset
+  Monitoring --> Investigating: reset
   RecoveryRequired --> Investigating: reset
 ```
 
 Approval is a record attached to the current state rather than a free-standing Boolean. Staging increments `resource_version`, calculates a SHA-256 action digest over incident ID, mitigation ID, and version, and derives a session-specific idempotency key. Approval must match that exact digest and version, expires after five minutes, and is consumed by execution.
+
+Successful action application and service recovery are separate outcomes. The deterministic executor enters `mitigated` only when the observed latency, error rate, and saturation are all within the displayed targets. An applied action that misses a target enters `monitoring`; a partial application enters `recovery-required`.
 
 ## Concurrency and replay
 
