@@ -80,6 +80,12 @@ button { color: inherit; }
 .concept-flow { margin-top: 18px; padding: 13px; border: 1px solid #294035; border-radius: 8px; background: #0b1510; display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #63736b; }
 .concept-flow span { display: flex; align-items: center; gap: 7px; color: #becac4; font: 600 9px var(--font-mono); }
 .concept-flow span svg { color: var(--green); }
+.runtime-layers { margin-top: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.runtime-layers > div { padding: 11px; border: 1px solid #25372f; border-radius: 8px; background: #0a120f; }
+.runtime-layers span { display: block; color: var(--green); font: 600 7px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.runtime-layers strong { display: block; margin-top: 6px; color: #dce6e1; font-size: 10px; }
+.runtime-layers small { display: block; margin-top: 5px; color: #7f8e87; font-size: 8px; line-height: 1.5; }
+.layer-boundary { margin: 12px 0 0; padding-left: 10px; border-left: 2px solid #3d7859; color: #8f9d96; font-size: 9px; line-height: 1.55; }
 .setup-card { border-top-color: #3d7859; }
 .setup-heading { display: flex; align-items: center; gap: 10px; }
 .setup-heading > svg { color: var(--green); }
@@ -306,7 +312,7 @@ footer a:hover, footer a:focus-visible { color: var(--green); text-decoration: u
   .topbar, .incident-strip { padding-left: 18px; padding-right: 18px; } .topbar { height: auto; min-height: 64px; } .brand span, .topbar-actions a { display: none; }
   .incident-strip { align-items: flex-start; gap: 15px; } .incident-meta { flex-wrap: wrap; justify-content: flex-end; } .incident-meta > span:first-child { display: none; }
   .webmcp-intro, .test-lab { width: calc(100% - 36px); margin-top: 15px; } .intro-copy, .setup-card, .test-lab { padding: 15px; } .concept-flow { align-items: stretch; flex-direction: column; } .concept-flow > svg { transform: rotate(90deg); align-self: center; } .lab-heading { align-items: stretch; flex-direction: column; } .environment-card { min-width: 0; }
-  .demo-steps, .tool-grid, .resource-grid, .proof-strip { grid-template-columns: 1fr; } .proof-strip > div { border-right: 0; border-bottom: 1px solid #293a32; } .proof-strip > div:last-child { border-bottom: 0; } .demo-step { grid-template-columns: 25px 1fr auto; }
+  .demo-steps, .tool-grid, .resource-grid, .proof-strip, .runtime-layers { grid-template-columns: 1fr; } .proof-strip > div { border-right: 0; border-bottom: 1px solid #293a32; } .proof-strip > div:last-child { border-bottom: 0; } .demo-step { grid-template-columns: 25px 1fr auto; }
   .workspace { padding: 15px 18px 22px; } .metric-grid, .side-column { grid-template-columns: 1fr; } .receipt-panel { grid-column: auto; } .mitigation-layout { grid-template-columns: 1fr; }
   .change-card { grid-template-columns: auto 1fr; } .signal-bars { display: none; } .tool-reference, .resource-section { width: calc(100% - 36px); } footer { margin: 0 18px; gap: 10px; flex-direction: column; } .site-attribution { justify-content: flex-start; }
 }
