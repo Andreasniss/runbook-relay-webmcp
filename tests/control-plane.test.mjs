@@ -8,6 +8,7 @@ import {
   createIdempotencyKey,
   createReceipt,
   evaluateExecutionGuard,
+  receiptHeadMatches,
   verifyReceiptChain,
 } from "../lib/control-plane.mjs";
 
@@ -43,6 +44,8 @@ test("receipt hashes create an append-only verifiable chain", async () => {
   const second = await createReceipt({ ...base, tool: "compare_mitigations", event: "Options compared", detail: "Options returned.", previousHash: first.receiptHash });
   assert.equal(verifyReceiptChain([first, second]), true);
   assert.equal(verifyReceiptChain([first, { ...second, previousHash: "tampered" }]), false);
+  assert.equal(receiptHeadMatches([first, second], second.receiptHash), true);
+  assert.equal(receiptHeadMatches([first], second.receiptHash), false);
 });
 
 const current = {

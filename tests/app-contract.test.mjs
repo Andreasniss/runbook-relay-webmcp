@@ -41,6 +41,7 @@ test("execution fails closed at the durable server boundary", () => {
   assert.match(controlSource, /receiptInsertWhenSessionHead/);
   assert.match(controlSource, /ON CONFLICT\(session_key, action_digest, resource_version\) DO UPDATE/);
   assert.match(controlSource, /expected\.receiptHash === receipt\.receiptHash/);
+  assert.match(controlSource, /receiptHeadMatches\(receipts, session\.last_receipt_hash\)/);
   assert.match(routeSource, /invalid_json/);
   assert.match(workerSource, /x-frame-options/);
   assert.match(source, /Approve staged change/);

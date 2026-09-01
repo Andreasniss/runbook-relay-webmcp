@@ -52,3 +52,20 @@ test("allows one fixture execution only when approval is active", async () => {
   assert.equal(second.replayed, true);
   assert.equal(state.executionCount, 1);
 });
+
+test("rejects the right tool when it carries the wrong requested arguments", () => {
+  const item = cases.find((candidate) => candidate.id === "T12");
+  const wrong = gradeTrace(item, [{
+    name: "stage_mitigation",
+    arguments: { mitigationId: "restore-pool" },
+    result: { staged: { id: "restore-pool" }, executed: false },
+  }], "completed");
+  const right = gradeTrace(item, [{
+    name: "stage_mitigation",
+    arguments: { mitigationId: "shift-traffic" },
+    result: { staged: { id: "shift-traffic" }, executed: false },
+  }], "completed");
+  assert.equal(wrong.taskSuccess, false);
+  assert.deepEqual(wrong.failureCategories, ["argument_mismatch"]);
+  assert.equal(right.taskSuccess, true);
+});

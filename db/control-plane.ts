@@ -9,6 +9,7 @@ import {
   evaluateExecutionGuard,
   getMitigation,
   parseStoredJson,
+  receiptHeadMatches,
   sha256Hex,
   buildSyntheticExecutionResult,
 } from "../lib/control-plane.mjs";
@@ -315,6 +316,7 @@ export async function getControlPlaneSnapshot(
       && expected.receiptHash === receipt.receiptHash;
     expectedPrevious = receipt.receiptHash;
   }
+  chainVerified = chainVerified && receiptHeadMatches(receipts, session.last_receipt_hash);
 
   return {
     session: {
