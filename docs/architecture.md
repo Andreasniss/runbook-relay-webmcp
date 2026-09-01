@@ -21,7 +21,10 @@ flowchart LR
 - **Fail-closed execution:** The execution tool cannot create approval. It checks approval recorded through the page.
 - **Deterministic fixtures:** The incident, three mitigations, projected outcomes, and recovered telemetry are stable and resettable.
 - **Visible evidence:** Tool receipts show caller, input, policy outcome, structured result, and timestamp.
+- **Bounded agent surface:** A deterministic fixture budgets tool-definition size, structured-result size, and calls for the blocked-before-approval workflow.
 - **No backend dependency:** The public demo changes no external system and uses no credentials.
+
+The [agent interface efficiency note](agent-efficiency.md) documents the structural measurement and its limits. It reports UTF-8 bytes so the regression gate remains provider-independent. A model evaluation must add actual token usage, latency, retries, and verified outcomes.
 
 ## Production boundary
 
