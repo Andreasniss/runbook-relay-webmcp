@@ -1,46 +1,102 @@
 # Architecture
 
-Runbook Relay is deliberately small: one deterministic state model powers the human interface, the browser-native WebMCP tools, and the labeled simulator.
+Runbook Relay keeps presentation and policy separate. Native WebMCP tools, the labeled simulator, and page controls all call one same-origin server API. Cloudflare D1, not React state, owns the durable incident, approval, execution, and receipt records.
 
 ```mermaid
-flowchart LR
-  A[Browser agent] -->|WebMCP tool call| B[Bounded tool contract]
-  H[Human operator] -->|UI action| C[Shared React state]
-  B --> C
-  C --> D[Decision log and receipts]
-  C --> G{Approval recorded?}
-  G -->|No| X[Execution blocked]
-  G -->|Yes| E[Simulated mitigation]
-  E --> D
+flowchart TB
+  A["Browser agent or simulator"] --> B["Same-origin control API"]
+  H["Human page controls"] --> B
+  B --> P["Policy and concurrency guards"]
+  P <--> D["Cloudflare D1"]
+  P --> X["Synthetic executor"]
+  X --> D
 ```
 
-## Runtime layers
+## Components
 
-The project keeps three concerns separate:
-
-| Layer | Role | Runbook Relay status |
+| Component | Responsibility | Trust level |
 |---|---|---|
-| Standard page API | Registers tools through `document.modelContext`; execution stays in the page and shares the visible session | Implemented |
-| Compatibility runtime | Supplies the page API in a browser that does not provide it natively | Not bundled |
-| Transport bridge | Carries discovery, calls, results, and lifecycle events between the page and an iframe, extension, or external MCP client | Not implemented or tested |
+| React page | Render shared state, register WebMCP tools, collect a page approval click | Untrusted client |
+| WebMCP handlers | Translate five bounded tool contracts into API operations | Untrusted caller input |
+| `/api/control-plane` | Validate origin, media type, schema, session, and operation | Server boundary |
+| Control-plane service | Calculate digests and keys; enforce approval, replay, and state guards | Policy authority |
+| Cloudflare D1 | Persist sessions, approvals, executions, and receipts | Durable system of record |
+| Synthetic executor | Return deterministic success or partial-failure fixture output | Demo-only external boundary |
 
-This separation follows the practical layering documented by [MCP-B](https://docs.mcp-b.ai/explanation/architecture/runtime-layering) without making MCP-B part of the production bundle. The native path remains the shortest proof: the browser discovers tools registered by the page, and the handlers execute against the same state a human sees.
+## Durable model
 
-A future compatibility evaluation may expose the same five contracts through an [MCP-B transport](https://docs.mcp-b.ai/explanation/architecture/transports-and-bridges) to Claude Desktop or Cursor. That would be independent cross-client evidence. It would not prove native WebMCP support in those clients and must not move execution or approval out of the page.
+Four D1 tables make the control flow inspectable:
 
-## Design decisions
+| Table | Key records |
+|---|---|
+| `control_sessions` | Session identity label, incident state, resource version, staged action, action digest, idempotency key, receipt head |
+| `approvals` | Action digest, version, approver session identity, approval and expiry times, consumption time |
+| `executions` | Unique action and idempotency bindings, outcome, stored result, timestamp |
+| `receipts` | Actor channel and identity, tool/event, inputs, result, outcome, version, previous hash, content hash |
 
-- **One state model:** Human controls, native tool calls, and simulator calls use the same application state and audit surfaces.
-- **Narrow tools:** Five operations separate reading, comparing, staging, executing, and resetting.
-- **Fail-closed execution:** The execution tool cannot create approval. It checks approval recorded through the page.
-- **Deterministic fixtures:** The incident, three mitigations, projected outcomes, and recovered telemetry are stable and resettable.
-- **Visible evidence:** Tool receipts show caller, input, policy outcome, structured result, and timestamp.
-- **Bounded agent surface:** A deterministic fixture budgets tool-definition size, structured-result size, and calls for the blocked-before-approval workflow.
-- **No backend dependency:** The public demo changes no external system and uses no credentials.
-- **Standards-first surface:** The application uses `document.modelContext` directly and removes registrations with an `AbortController`; no polyfill, hook, resource extension, or relay is required.
+The migration is generated from [db/schema.ts](../db/schema.ts) and committed under [drizzle](../drizzle/). Sites packages that directory with the build; the owned Cloudflare workflow applies migrations before deployment.
 
-The [agent interface efficiency note](agent-efficiency.md) documents the structural measurement and its limits. It reports UTF-8 bytes so the regression gate remains provider-independent. A model evaluation must add actual token usage, latency, retries, and verified outcomes.
+## State transition
+
+```mermaid
+stateDiagram-v2
+  [*] --> Investigating
+  Investigating --> AwaitingApproval: stage catalog action
+  AwaitingApproval --> AwaitingApproval: blocked execution
+  AwaitingApproval --> Approved: matching page approval
+  Approved --> Mitigated: applied and within target
+  Approved --> Monitoring: applied but outside target
+  Approved --> RecoveryRequired: partial failure
+  Mitigated --> Investigating: reset
+  Monitoring --> Investigating: reset
+  RecoveryRequired --> Investigating: reset
+```
+
+Approval is a record attached to the current state rather than a free-standing Boolean. Staging increments `resource_version`, calculates a SHA-256 action digest over incident ID, mitigation ID, and version, and derives a session-specific idempotency key. Approval must match that exact digest and version, expires after five minutes, and is consumed by execution.
+
+Successful action application and service recovery are separate outcomes. The deterministic executor enters `mitigated` only when the observed latency, error rate, and saturation are all within the displayed targets. An applied action that misses a target enters `monitoring`; a partial application enters `recovery-required`.
+
+## Concurrency and replay
+
+Every mutation uses a compare-and-swap condition over the current version and receipt-chain head. The receipt insert is additionally guarded by the new session head, so a request that loses the state race cannot append an orphan receipt. Approval insertion is guarded by the state transition that recorded its receipt.
+
+Execution uses a unique `(session_key, idempotency_key)` constraint and a unique `(session_key, action_digest)` constraint. Its insert succeeds only while:
+
+- staged digest, version, and idempotency key match;
+- approval belongs to the same session identity;
+- approval is unused and unexpired; and
+- the receipt head has not changed.
+
+The exact replay returns the stored execution result. Reusing a key for a different action is blocked. This prevents duplicate synthetic effects while keeping retries safe.
+
+## Receipt chain
+
+Each receipt hash covers canonical JSON containing its session, event, caller channel and identity, outcome, input, result, detail, action digest, resource version, previous hash, and timestamp. The snapshot API reads session state, its matching approval, executions, receipts, and receipt count in one transactional D1 batch. It returns the latest 100 receipts plus one anchor in insertion order when needed, recomputes content hashes, and verifies every link in that returned segment; total count, truncation, and head are reported separately.
+
+This detects modification inside the verified segment. It does not provide a signature, trusted timestamp, or external transparency anchor.
+
+## Session boundary
+
+The server issues a random 256-bit cookie with `HttpOnly`, `SameSite=Strict`, a 24-hour lifetime, and `Secure` on HTTPS. Only a SHA-256-derived session key and short public label are stored. State-changing requests must have an exact same-origin `Origin` header and `application/json` content type. Worker responses deny framing and set conservative content, referrer, and device-permission headers.
+
+This is a scoped anonymous browser session, not authenticated workforce identity. It isolates demo users and binds their approval state; it does not establish employee role, authorization, or independent proof of human presence.
+
+## WebMCP and compatibility layers
+
+| Layer | Runbook Relay status |
+|---|---|
+| Standard page API | Five tools registered through `document.modelContext`; implemented |
+| Compatibility runtime | Not bundled |
+| Transport bridge | Not implemented or tested |
+
+The standard page API is only the discovery and invocation surface. It does not become the policy authority. A future MCP-B or external client bridge would add origin, sender identity, relay exposure, and per-connection isolation requirements described in the [threat model](threat-model.md).
+
+## Evaluation architecture
+
+The [50-task harness](../evals/live-tool-use/README.md) uses the same five bounded tool definitions with a deterministic in-process fixture. The runner calls the OpenAI Responses API with `store: false`, carries output and encrypted reasoning items between turns, disables parallel tool calls, records request IDs, and calculates latency, token, and cost totals. It requires a pinned model and explicit pricing inputs.
+
+Automatic trace grades are a first pass. A complete evidence package also requires human labels for task success, policy safety, response quality, and failure taxonomy.
 
 ## Production boundary
 
-This is a browser-side reference implementation, not a production operations console. A production design would move authorization and execution server-side, bind actions to scoped identities, persist tamper-evident audit records, enforce idempotency, and validate live infrastructure state immediately before execution.
+The project demonstrates a production-style control pattern over a synthetic action. A real incident system would additionally need authenticated workforce identity and roles, phishing-resistant human authorization, scoped infrastructure credentials, secrets management, independently anchored audit records, redaction and retention controls, live precondition checks, recovery orchestration, and multi-region resilience.

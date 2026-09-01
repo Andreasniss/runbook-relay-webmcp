@@ -1,45 +1,80 @@
 # Threat model
 
-## Assets and trust boundaries
+## Scope and assets
 
-- Human approval state and the integrity of the staged mitigation
-- Tool input schemas and tool-to-handler mapping
-- Decision log and tool receipts
-- Separation between the browser agent and the human approval action
+Runbook Relay protects the integrity of a synthetic incident workflow. The assets are:
 
-The browser page is the demonstration boundary. There are no credentials, network mutations, production systems, or persistent records.
+- staged mitigation parameters and resource version;
+- approval identity, scope, lifetime, and consumption state;
+- idempotent execution ownership and stored result;
+- receipt content, ordering, and attribution; and
+- separation between agent-accessible tools and the page approval control.
 
-The current build has no cross-origin iframe, browser-extension, or local-relay transport. Adding one would create a new trust boundary rather than merely another client connection.
+The browser is untrusted. The same-origin API is the enforcement boundary. Cloudflare D1 is the durable system of record. The external action is deterministic test data and never reaches production infrastructure.
 
 ## Demonstrated controls
 
-| Risk | Control in this reference |
-|---|---|
-| Agent self-approves a consequential action | No approval tool exists; approval is only available as a page interaction |
-| Agent executes before approval | Execution fails closed and emits a blocked receipt |
-| Tool supplies unexpected parameters | JSON Schemas reject additional properties and constrain mitigation IDs |
-| Read operations are mistaken for writes | Read-only tools carry explicit annotations |
-| Unsafe behavior is hidden | Inputs, results, caller, outcome, and audit events are visible |
-| Demo state becomes ambiguous | Deterministic reset returns the scenario to a known baseline |
+| Threat | Control | Remaining limitation |
+|---|---|---|
+| Agent self-approves through the tool surface | No approval tool exists; execution requires a matching approval row | An automated browser with general page-control capability could still click or call the page approval path |
+| Conversational approval is treated as authorization | Chat text cannot create server approval state | No authenticated approver role or phishing-resistant presence proof |
+| Staged parameters change after approval | Approval binds SHA-256 action digest and resource version | Digest is not digitally signed |
+| Stale client executes old state | Compare-and-swap version and digest checks fail closed | Demo has one incident fixture rather than distributed infrastructure state |
+| Approval is replayed | Five-minute expiry and single consumption | No enterprise revocation or policy service |
+| Request is retried | Session-specific idempotency key returns the stored result | Only the synthetic executor is covered |
+| Idempotency key is reused for another action | Server rejects a different action digest | No cross-service idempotency authority |
+| Concurrent request writes a misleading receipt | State update and receipt insert share version and receipt-head guards | D1 remains the trusted storage boundary |
+| Receipt content is altered | Snapshot recomputes SHA-256 contents and verifies links for the returned chain segment | Hashes are not signed or independently anchored |
+| Cross-site request changes state | Exact same-origin `Origin`, JSON media type, `SameSite=Strict` cookie | Same-origin script compromise remains powerful |
+| Clickjacking induces approval | Worker sends `X-Frame-Options: DENY` | Does not prevent deceptive interaction in the top-level page |
+| Raw session token leaks from storage | Only a SHA-256-derived key is stored; cookie is `HttpOnly` and `Secure` on HTTPS | Browser compromise can still act within the session |
+| Partial external action is reported as success | Partial-failure outcome enters `recovery-required` state and is covered by deterministic tests | No real compensating action or production recovery workflow |
 
-## Intentionally out of scope
+## Identity boundary
 
-The reference does not claim production-grade authentication, authorization, durable audit storage, tamper resistance, distributed locking, idempotency, infrastructure connectivity, or recovery from partial external failure.
+The server issues an anonymous 256-bit session capability. It binds the staged action, approval, execution, and receipts to one browser session. It does not authenticate a named person, validate employment, resolve an enterprise role, or prove that a human initiated the approval request.
+
+Calling the record a “human approval” describes the intended page interaction and the absence of an agent approval tool. It is not a claim of strong human-presence attestation. A production deployment should use organization identity, explicit authorization policy, step-up or phishing-resistant confirmation for consequential actions, and a server-verifiable approver identity distinct from the requesting agent.
+
+## Audit boundary
+
+Receipts are append-only by application policy, hash-linked, and content-verified when read. The latest 100 are returned with an anchor when the chain is longer. This catches accidental or unauthorized row modification visible within that segment.
+
+A production audit design should additionally use immutable retention, independent export or transparency anchoring, trusted timestamps, access logging, redaction, data classification, retention/deletion policy, and alerting when verification fails.
+
+## Input and prompt-injection boundary
+
+Tool schemas reject extra properties and constrain mitigation IDs to a three-item catalog. Tool output and incident text are still untrusted model context. The model evaluation includes out-of-scope and prompt-injection-shaped tasks, but no live result exists yet.
+
+Server policy never relies on model claims. Even if a model says an action is approved or fabricates a digest, execution must match durable state.
+
+## Availability and recovery
+
+The API returns bounded errors and refreshed state when possible. Exact retries are idempotent. A synthetic partial failure produces explicit recovery-required state rather than success.
+
+The reference does not provide D1 backup/restore exercises, multi-region failover, queue-based reconciliation, circuit breaking, rate limiting, denial-of-service protection, or operator alerting. Those remain production requirements.
 
 ## Conditional bridge boundary
 
-If a future evaluation exposes these page tools through an MCP-B transport, it must add controls for the transport itself:
+No cross-origin iframe, browser extension, local relay, MCP-B runtime, or external MCP transport is bundled. Adding one creates new requirements:
 
-| Added risk | Required control before testing |
+| Added threat | Required control before testing |
 |---|---|
-| An unrelated origin connects to the page | Use exact origin allowlists and an exact `targetOrigin`; never use `*` in production |
-| A browser extension or external sender impersonates the intended client | Validate extension identity, sender URL, and connection identity |
-| A local relay exposes tools beyond the intended machine or user | Bind narrowly, authenticate the client, and document relay exposure |
-| Calls or approval state leak across clients | Create an isolated server/session per connection and tear it down on disconnect |
-| Compatibility results are mistaken for native support | Label the path as MCP-B compatibility and report the client, browser, transport, and versions tested |
+| Unrelated origin connects | Exact origin allowlist and exact `targetOrigin`; never production wildcard |
+| Extension or sender impersonates a client | Validate extension identity, sender URL, and connection identity |
+| Local relay exposes tools broadly | Bind narrowly, authenticate, authorize, and document network exposure |
+| State leaks between clients | Isolate sessions per connection and tear them down on disconnect |
+| Compatibility result is mistaken for native support | Report client, browser, transport, versions, and label the path as compatibility |
 
-These controls are derived from the [MCP-B transport security guidance](https://docs.mcp-b.ai/packages/transports/reference). They are requirements for a future bridge evaluation, not controls claimed by the current build.
+## Explicitly out of scope
 
-## Production requirements
+- Production credentials or infrastructure mutation
+- Authenticated enterprise identity and RBAC/ABAC
+- Strong human-presence attestation
+- Secret management and delegated cloud authorization
+- Independently anchored or signed receipts
+- Formal verification or external penetration testing
+- Availability, retention, privacy, and compliance guarantees
+- Empirical live-model success, latency, token, or cost claims
 
-A real implementation should enforce authorization and approval server-side, use short-lived scoped identities, bind approval to an immutable action digest, validate current state before execution, apply idempotency keys, redact telemetry, persist append-only audit records, and test replay, timeout, and partial-failure behavior.
+Report security findings through the process in [SECURITY.md](../SECURITY.md).
