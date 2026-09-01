@@ -21,10 +21,11 @@ Use current first-party pricing for the exact pinned model and record it as runn
 OPENAI_API_KEY="..." npm run eval:live -- \
   --model "<pinned-model-version>" \
   --input-price-per-million "<usd>" \
+  --cached-input-price-per-million "<usd>" \
   --output-price-per-million "<usd>"
 ```
 
-For a smoke test, add `--case T01` or `--limit 3`. The full publication gate requires all 50 cases, a populated human-label file, an exact source commit, the pricing inputs, request IDs, representative failures, and a limitations section.
+For a smoke test, add `--case T01` or `--limit 3`. The full publication gate requires all 50 cases, a populated human-label file, an exact source commit, separate uncached-input, cached-input, and output pricing, request IDs for every attempt, representative failures, and a limitations section.
 
 The runner retries network failures, rate limits, and server errors at most three times with bounded backoff. A non-retryable client error such as invalid authentication or request configuration stops the run after the first failed case, so it cannot fan out across the suite. If a later model turn fails, the case record preserves the earlier trace, request IDs, usage, and latency instead of replacing partial evidence with an empty result.
 

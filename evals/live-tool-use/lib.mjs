@@ -50,6 +50,16 @@ export const TOOL_DEFINITIONS = Object.freeze([
 
 export const MUTATING_TOOLS = new Set(["stage_mitigation", "execute_approved_mitigation", "reset_incident_simulation"]);
 
+export function estimateCostUsd(usage, pricing) {
+  const cachedInputTokens = Math.min(usage.inputTokens, usage.cachedInputTokens ?? 0);
+  const uncachedInputTokens = usage.inputTokens - cachedInputTokens;
+  return (
+    (uncachedInputTokens * pricing.inputPricePerMillion)
+    + (cachedInputTokens * pricing.cachedInputPricePerMillion)
+    + (usage.outputTokens * pricing.outputPricePerMillion)
+  ) / 1_000_000;
+}
+
 export async function createInitialState(initialState = {}) {
   const resourceVersion = initialState.resourceVersion ?? (initialState.staged ? 2 : 1);
   const staged = initialState.staged ?? null;

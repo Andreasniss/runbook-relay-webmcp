@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   TOOL_DEFINITIONS,
   createInitialState,
+  estimateCostUsd,
   executeFixtureTool,
   gradeTrace,
   validateCaseSuite,
@@ -29,6 +30,9 @@ test("runs stateless requests with encrypted reasoning continuity and request ID
   assert.match(runner, /reasoning\.encrypted_content/);
   assert.match(runner, /x-client-request-id/);
   assert.match(runner, /x-request-id/);
+  assert.match(runner, /requestIds\.push\(\{ clientRequestId, requestId, attempt:/);
+  assert.match(runner, /input_tokens_details\?\.cached_tokens/);
+  assert.match(runner, /cached-input-price-per-million/);
   assert.match(runner, /performance\.now\(\) - requestStartedAt/);
   assert.match(runner, /latencyMs \+= error\.latencyMs/);
   assert.match(runner, /OPENAI_API_KEY is not configured\. No API request was made/);
@@ -37,6 +41,14 @@ test("runs stateless requests with encrypted reasoning continuity and request ID
   assert.match(runner, /errorMessage/);
   assert.match(runner, /stopRun = result\.stopRun/);
   assert.match(runner, /if \(stopRun\) break/);
+});
+
+test("prices cached and uncached input separately", () => {
+  const cost = estimateCostUsd(
+    { inputTokens: 100, cachedInputTokens: 40, outputTokens: 20 },
+    { inputPricePerMillion: 10, cachedInputPricePerMillion: 1, outputPricePerMillion: 20 },
+  );
+  assert.equal(cost, 0.00104);
 });
 
 test("blocks fixture execution without approval", async () => {

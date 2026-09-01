@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import {
   TOOL_DEFINITIONS,
   createInitialState,
+  estimateCostUsd,
   executeFixtureTool,
   gradeTrace,
   validateCaseSuite,
@@ -17,10 +18,10 @@ The control plane, not the conversation, decides whether execution is authorized
 When a request is unsupported, explain the boundary without substituting another action.`;
 
 class ApiRequestError extends Error {
-  constructor(message, latencyMs, requestId = null) {
+  constructor(message, latencyMs, requestIds = []) {
     super(message);
     this.latencyMs = latencyMs;
-    this.requestId = requestId;
+    this.requestIds = requestIds;
   }
 }
 
@@ -58,9 +59,10 @@ function extractOutputText(response) {
 
 async function requestResponse(apiKey, payload, clientRequestId) {
   let lastError;
-  let lastRequestId = null;
+  const requestIds = [];
   const requestStartedAt = performance.now();
   for (let attempt = 0; attempt < 3; attempt += 1) {
+    let attemptRecorded = false;
     try {
       const response = await fetch(API_URL, {
         method: "POST",
@@ -73,18 +75,22 @@ async function requestResponse(apiKey, payload, clientRequestId) {
         signal: AbortSignal.timeout(120_000),
       });
       const requestId = response.headers.get("x-request-id");
-      lastRequestId = requestId;
+      requestIds.push({ clientRequestId, requestId, attempt: attempt + 1, status: response.status, failed: !response.ok });
+      attemptRecorded = true;
       const body = await response.json().catch(() => ({}));
-      if (response.ok) return { body, latencyMs: Math.round(performance.now() - requestStartedAt), requestId };
+      if (response.ok) return { body, latencyMs: Math.round(performance.now() - requestStartedAt), requestIds };
       const message = body?.error?.message ?? `HTTP ${response.status}`;
       const detail = `${message}${requestId ? ` (request ${requestId})` : ""}`;
       if (response.status !== 429 && response.status < 500) {
-        throw new NonRetryableApiError(detail, Math.round(performance.now() - requestStartedAt), requestId);
+        throw new NonRetryableApiError(detail, Math.round(performance.now() - requestStartedAt), requestIds);
       }
       lastError = new Error(detail);
     } catch (error) {
       if (error instanceof NonRetryableApiError) throw error;
       lastError = error;
+      if (!attemptRecorded) {
+        requestIds.push({ clientRequestId, requestId: null, attempt: attempt + 1, status: null, failed: true });
+      }
       if (attempt === 2) break;
     }
     if (attempt < 2) await new Promise((accept) => setTimeout(accept, 500 * (2 ** attempt)));
@@ -92,7 +98,7 @@ async function requestResponse(apiKey, payload, clientRequestId) {
   throw new ApiRequestError(
     lastError instanceof Error ? lastError.message : "The Responses API request failed.",
     Math.round(performance.now() - requestStartedAt),
-    lastRequestId,
+    requestIds,
   );
 }
 
@@ -104,7 +110,7 @@ async function runCase(caseDefinition, config) {
   ];
   const trace = [];
   const requestIds = [];
-  const usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+  const usage = { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0, totalTokens: 0 };
   let latencyMs = 0;
   let finalText = "";
   let terminal = "max_turns";
@@ -130,14 +136,15 @@ async function runCase(caseDefinition, config) {
       stopRun = error instanceof NonRetryableApiError;
       if (error instanceof ApiRequestError) {
         latencyMs += error.latencyMs;
-        requestIds.push({ clientRequestId, requestId: error.requestId, failed: true });
+        requestIds.push(...error.requestIds);
       }
       break;
     }
-    const { body, latencyMs: requestLatency, requestId } = responseResult;
+    const { body, latencyMs: requestLatency, requestIds: responseRequestIds } = responseResult;
     latencyMs += requestLatency;
-    requestIds.push({ clientRequestId, requestId });
+    requestIds.push(...responseRequestIds);
     usage.inputTokens += body.usage?.input_tokens ?? 0;
+    usage.cachedInputTokens += body.usage?.input_tokens_details?.cached_tokens ?? 0;
     usage.outputTokens += body.usage?.output_tokens ?? 0;
     usage.totalTokens += body.usage?.total_tokens ?? 0;
     finalText = extractOutputText(body);
@@ -177,10 +184,7 @@ async function runCase(caseDefinition, config) {
   }
 
   const grade = gradeTrace(caseDefinition, trace, terminal);
-  const costUsd = (
-    (usage.inputTokens * config.inputPricePerMillion)
-    + (usage.outputTokens * config.outputPricePerMillion)
-  ) / 1_000_000;
+  const costUsd = estimateCostUsd(usage, config);
   return {
     caseId: caseDefinition.id,
     category: caseDefinition.category,
@@ -229,12 +233,15 @@ function summarize(results, config, startedAt, completedAt) {
     },
     usage: {
       inputTokens: results.reduce((sum, item) => sum + item.usage.inputTokens, 0),
+      cachedInputTokens: results.reduce((sum, item) => sum + item.usage.cachedInputTokens, 0),
+      uncachedInputTokens: results.reduce((sum, item) => sum + item.usage.inputTokens - item.usage.cachedInputTokens, 0),
       outputTokens: results.reduce((sum, item) => sum + item.usage.outputTokens, 0),
       totalTokens: results.reduce((sum, item) => sum + item.usage.totalTokens, 0),
     },
     costUsd: results.reduce((sum, item) => sum + item.costUsd, 0),
     pricing: {
       inputPerMillionTokensUsd: config.inputPricePerMillion,
+      cachedInputPerMillionTokensUsd: config.cachedInputPricePerMillion,
       outputPerMillionTokensUsd: config.outputPricePerMillion,
     },
     failureCategories,
@@ -249,6 +256,7 @@ const args = parseArgs(process.argv.slice(2));
 if (!args.model) throw new Error("Pass an explicit pinned model with --model.");
 if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured. No API request was made.");
 const inputPricePerMillion = requirePositiveNumber(args["input-price-per-million"], "input-price-per-million");
+const cachedInputPricePerMillion = requirePositiveNumber(args["cached-input-price-per-million"], "cached-input-price-per-million");
 const outputPricePerMillion = requirePositiveNumber(args["output-price-per-million"], "output-price-per-million");
 const maxTurns = args["max-turns"] ? Number.parseInt(args["max-turns"], 10) : 6;
 if (!Number.isInteger(maxTurns) || maxTurns < 1 || maxTurns > 12) throw new Error("--max-turns must be an integer from 1 to 12.");
@@ -264,7 +272,7 @@ const safeModel = args.model.replace(/[^a-zA-Z0-9._-]+/g, "-");
 const runId = new Date().toISOString().replace(/[:.]/g, "-");
 const outputDirectory = resolve(args["output-dir"] ?? `evals/live-tool-use/results/${runId}-${safeModel}`);
 await mkdir(outputDirectory, { recursive: true });
-const config = { model: args.model, apiKey: process.env.OPENAI_API_KEY, inputPricePerMillion, outputPricePerMillion, maxTurns };
+const config = { model: args.model, apiKey: process.env.OPENAI_API_KEY, inputPricePerMillion, cachedInputPricePerMillion, outputPricePerMillion, maxTurns };
 const startedAt = new Date().toISOString();
 const results = [];
 
@@ -287,7 +295,7 @@ for (const item of selected) {
       finalText: "",
       trace: [],
       grade: gradeTrace(item, [], "api_error"),
-      usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+      usage: { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0, totalTokens: 0 },
       latencyMs: 0,
       costUsd: 0,
       requestIds: [],
