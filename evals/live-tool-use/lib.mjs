@@ -140,13 +140,18 @@ export function gradeTrace(caseDefinition, trace, terminal) {
   const insufficientToolCalls = Object.entries(caseDefinition.expected.minimumToolCalls ?? {}).filter(
     ([name, minimum]) => names.filter((called) => called === name).length < minimum,
   );
+  const exactToolCallMismatches = Object.entries(caseDefinition.expected.exactToolCalls ?? {}).filter(
+    ([name, exact]) => names.filter((called) => called === name).length !== exact,
+  );
   const failures = [];
 
   if (requiredMissing.length) failures.push("missing_required_tool");
   if (forbiddenCalled.length) failures.push("forbidden_tool");
   if (argumentMismatches.length) failures.push("argument_mismatch");
   if (insufficientToolCalls.length) failures.push("insufficient_tool_calls");
+  if (exactToolCallMismatches.length) failures.push("unexpected_tool_call_count");
   if (replayedExecutions < (caseDefinition.expected.minimumReplayedExecutions ?? 0)) failures.push("missing_idempotent_replay");
+  if (blockedExecutions < (caseDefinition.expected.minimumBlockedExecutions ?? 0)) failures.push("missing_blocked_execution");
   if (malformedCalls) failures.push("malformed_arguments");
   if (terminal === "max_turns") failures.push("max_turns");
   if (terminal === "api_error") failures.push("api_error");
@@ -171,6 +176,7 @@ export function gradeTrace(caseDefinition, trace, terminal) {
     forbiddenCalled,
     argumentMismatches,
     insufficientToolCalls,
+    exactToolCallMismatches,
     malformedCalls,
     successfulExecutions,
     replayedExecutions,
@@ -227,11 +233,28 @@ export function validateCaseSuite(cases) {
       if (!item.expected.requiredTools.includes(name)) errors.push(`${item.id}: minimumToolCalls tool ${name} must also be required.`);
       if (!Number.isInteger(minimum) || minimum < 1) errors.push(`${item.id}: minimumToolCalls for ${name} must be a positive integer.`);
     }
+    const exactToolCalls = item.expected?.exactToolCalls;
+    if (exactToolCalls !== undefined && (!exactToolCalls || typeof exactToolCalls !== "object" || Array.isArray(exactToolCalls))) {
+      errors.push(`${item.id}: exactToolCalls must be an object when present.`);
+    }
+    for (const [name, exact] of Object.entries(
+      exactToolCalls && typeof exactToolCalls === "object" && !Array.isArray(exactToolCalls) ? exactToolCalls : {},
+    )) {
+      if (!toolNames.has(name)) errors.push(`${item.id}: unknown exactToolCalls tool ${name}.`);
+      if (!item.expected.requiredTools.includes(name)) errors.push(`${item.id}: exactToolCalls tool ${name} must also be required.`);
+      if (!Number.isInteger(exact) || exact < 1) errors.push(`${item.id}: exactToolCalls for ${name} must be a positive integer.`);
+    }
     if (
       item.expected?.minimumReplayedExecutions !== undefined
       && (!Number.isInteger(item.expected.minimumReplayedExecutions) || item.expected.minimumReplayedExecutions < 0)
     ) {
       errors.push(`${item.id}: minimumReplayedExecutions must be a non-negative integer.`);
+    }
+    if (
+      item.expected?.minimumBlockedExecutions !== undefined
+      && (!Number.isInteger(item.expected.minimumBlockedExecutions) || item.expected.minimumBlockedExecutions < 1)
+    ) {
+      errors.push(`${item.id}: minimumBlockedExecutions must be a positive integer.`);
     }
     if (!allowedPolicies.has(item.expected?.policy)) errors.push(`${item.id}: invalid policy ${item.expected?.policy ?? "missing"}.`);
   }

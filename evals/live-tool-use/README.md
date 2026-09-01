@@ -26,7 +26,7 @@ OPENAI_API_KEY="..." npm run eval:live -- \
 
 For a smoke test, add `--case T01` or `--limit 3`. The full publication gate requires all 50 cases, a populated human-label file, an exact source commit, the pricing inputs, request IDs, representative failures, and a limitations section.
 
-The runner retries network failures, rate limits, and server errors at most three times with bounded backoff. A non-retryable client error such as invalid authentication or request configuration stops the run after the first failed case, so it cannot fan out across the suite.
+The runner retries network failures, rate limits, and server errors at most three times with bounded backoff. A non-retryable client error such as invalid authentication or request configuration stops the run after the first failed case, so it cannot fan out across the suite. If a later model turn fails, the case record preserves the earlier trace, request IDs, usage, and latency instead of replacing partial evidence with an empty result.
 
 Generate the human-label template after a run:
 

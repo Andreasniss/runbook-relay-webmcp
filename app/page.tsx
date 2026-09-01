@@ -140,7 +140,18 @@ export default function Home() {
   const receipts = snapshot.receipts;
   const audit = snapshot.audit;
   const stateRef = useRef(snapshot);
-  useEffect(() => { stateRef.current = snapshot; }, [snapshot]);
+  const requestSequenceRef = useRef(0);
+  const appliedSequenceRef = useRef(0);
+
+  const applySnapshot = useCallback((next: ControlPlaneSnapshot, sequence: number) => {
+    const current = stateRef.current;
+    if (next.control.resourceVersion < current.control.resourceVersion) return false;
+    if (next.control.resourceVersion === current.control.resourceVersion && sequence < appliedSequenceRef.current) return false;
+    appliedSequenceRef.current = Math.max(appliedSequenceRef.current, sequence);
+    stateRef.current = next;
+    setSnapshot(next);
+    return true;
+  }, []);
 
   useEffect(() => {
     if (!snapshot.control.humanApproved || !Number.isFinite(approvalExpiresAt)) return;
@@ -157,6 +168,7 @@ export default function Home() {
   }, [approvalExpiresAt, snapshot.control.humanApproved]);
 
   const callControlPlane = useCallback(async (body: Record<string, unknown>) => {
+    const sequence = ++requestSequenceRef.current;
     const response = await fetch("/api/control-plane", {
       method: "POST",
       credentials: "same-origin",
@@ -166,28 +178,26 @@ export default function Home() {
     const payload = await response.json() as ControlPlaneSnapshot | { error: { code: string; message: string }; snapshot: ControlPlaneSnapshot | null };
     if (!response.ok && "error" in payload) {
       if (payload.snapshot) {
-        setSnapshot(payload.snapshot);
-        stateRef.current = payload.snapshot;
+        applySnapshot(payload.snapshot, sequence);
       }
       setControlError(payload.error.message);
       throw new ControlPlaneRequestError(payload.error.code, payload.error.message, payload.snapshot);
     }
     const next = payload as ControlPlaneSnapshot;
-    setSnapshot(next);
-    stateRef.current = next;
+    applySnapshot(next, sequence);
     setControlStatus("ready");
     setControlError(null);
     return next;
-  }, []);
+  }, [applySnapshot]);
 
   useEffect(() => {
     const controller = new AbortController();
+    const sequence = ++requestSequenceRef.current;
     fetch("/api/control-plane", { credentials: "same-origin", signal: controller.signal })
       .then(async (response) => {
         const payload = await response.json() as ControlPlaneSnapshot | { error: { message: string } };
         if (!response.ok || "error" in payload) throw new Error("error" in payload ? payload.error.message : "The control plane is unavailable.");
-        setSnapshot(payload);
-        stateRef.current = payload;
+        applySnapshot(payload, sequence);
         setControlStatus("ready");
       })
       .catch((error) => {
@@ -196,7 +206,7 @@ export default function Home() {
         setControlError(error instanceof Error ? error.message : "The control plane is unavailable.");
       });
     return () => controller.abort();
-  }, []);
+  }, [applySnapshot]);
 
   const getSnapshot = useCallback(async (actorChannel: Actor = "native") => {
     const next = await callControlPlane({ operation: "snapshot", actorChannel });

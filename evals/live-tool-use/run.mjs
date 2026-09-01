@@ -93,18 +93,29 @@ async function runCase(caseDefinition, config) {
   let latencyMs = 0;
   let finalText = "";
   let terminal = "max_turns";
+  let errorMessage = null;
+  let stopRun = false;
 
   for (let turn = 0; turn < config.maxTurns; turn += 1) {
     const clientRequestId = randomUUID();
-    const { body, latencyMs: requestLatency, requestId } = await requestResponse(config.apiKey, {
-      model: config.model,
-      input,
-      tools: TOOL_DEFINITIONS,
-      parallel_tool_calls: false,
-      store: false,
-      include: ["reasoning.encrypted_content"],
-      max_output_tokens: 1200,
-    }, clientRequestId);
+    let responseResult;
+    try {
+      responseResult = await requestResponse(config.apiKey, {
+        model: config.model,
+        input,
+        tools: TOOL_DEFINITIONS,
+        parallel_tool_calls: false,
+        store: false,
+        include: ["reasoning.encrypted_content"],
+        max_output_tokens: 1200,
+      }, clientRequestId);
+    } catch (error) {
+      terminal = "api_error";
+      errorMessage = error instanceof Error ? error.message : String(error);
+      stopRun = error instanceof NonRetryableApiError;
+      break;
+    }
+    const { body, latencyMs: requestLatency, requestId } = responseResult;
     latencyMs += requestLatency;
     requestIds.push({ clientRequestId, requestId });
     usage.inputTokens += body.usage?.input_tokens ?? 0;
@@ -165,6 +176,8 @@ async function runCase(caseDefinition, config) {
     latencyMs,
     costUsd,
     requestIds,
+    ...(errorMessage ? { error: errorMessage } : {}),
+    stopRun,
   };
 }
 
@@ -242,6 +255,7 @@ for (const item of selected) {
   try {
     const result = await runCase(item, config);
     results.push(result);
+    stopRun = result.stopRun;
     console.log(result.grade.taskSuccess ? "pass" : `fail (${result.grade.failureCategories.join(", ")})`);
   } catch (error) {
     results.push({

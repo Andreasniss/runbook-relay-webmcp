@@ -63,6 +63,8 @@ test("ships an observable guided test experience", () => {
   assert.match(source, /five-minute approval/);
   assert.match(source, /approvalExpiresAt > approvalClock/);
   assert.match(source, /replay\.resourceVersion/);
+  assert.match(source, /next\.control\.resourceVersion < current\.control\.resourceVersion/);
+  assert.match(source, /sequence < appliedSequenceRef\.current/);
   assert.match(source, /external systems changed/);
   assert.match(source, /Native WebMCP requires desktop/);
   assert.match(source, /Native WebMCP active · 5 tools registered/);
