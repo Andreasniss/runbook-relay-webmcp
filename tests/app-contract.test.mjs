@@ -69,6 +69,7 @@ test("ships an observable guided test experience", () => {
   assert.match(source, /requestQueueRef\.current\.then\(operation, operation\)/);
   assert.match(source, /requestQueueRef\.current = result\.then/);
   assert.match(source, /Action applied; SLO remains outside target/);
+  assert.match(source, /executionAttempted \? "Consumed by execution"/);
   assert.match(source, /external systems changed/);
   assert.match(source, /Native WebMCP requires desktop/);
   assert.match(source, /Native WebMCP active · 5 tools registered/);

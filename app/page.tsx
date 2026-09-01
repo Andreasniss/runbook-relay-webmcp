@@ -351,6 +351,8 @@ export default function Home() {
     saturation: snapshot.telemetry.saturation,
   };
   const executionApplied = status === "mitigated" || status === "monitoring";
+  const executionAttempted = executionApplied || status === "recovery-required";
+  const approvalStepDone = approved || executionAttempted;
   const incidentHeading = status === "mitigated"
     ? "Service recovered"
     : status === "monitoring"
@@ -493,11 +495,11 @@ export default function Home() {
             <div className="panel-heading compact"><div><span className="section-kicker">Policy boundary</span><h2>Execution control</h2></div><ShieldCheck size={19} /></div>
             {!staged ? <div className="empty-control"><div className="lock-orbit"><Bot size={21} /><span><UserCheck size={17} /></span></div><strong>No change staged</strong><p>The agent can investigate and simulate. The server requires a matching human approval before execution.</p></div> : <div className="approval-flow">
               <div className="approval-step done"><span><Check size={13} /></span><div><strong>Mitigation staged</strong><small>{staged.title}</small></div></div>
-              <div className={`approval-step ${approved ? "done" : "active"}`}><span>{approved ? <Check size={13} /> : "2"}</span><div><strong>Human approval</strong><small>{approved ? `Bound to ${snapshot.session.identity}` : "Required before execution"}</small></div></div>
+              <div className={`approval-step ${approvalStepDone ? "done" : "active"}`}><span>{approvalStepDone ? <Check size={13} /> : "2"}</span><div><strong>Human approval</strong><small>{executionAttempted ? "Consumed by execution" : approved ? `Bound to ${snapshot.session.identity}` : "Required before execution"}</small></div></div>
               <div className={`approval-step ${executionApplied ? "done" : ""}`}><span>{executionApplied ? <Check size={13} /> : "3"}</span><div><strong>Execute and verify</strong><small>{status === "mitigated" ? "Service recovered" : status === "monitoring" ? "Action applied; continue monitoring" : status === "recovery-required" ? "Recovery action required" : "Fail-closed until approved"}</small></div></div>
               <dl className="control-metadata"><div><dt>Resource</dt><dd>v{snapshot.control.resourceVersion}</dd></div><div><dt>Action digest</dt><dd><code>{snapshot.control.actionDigest?.slice(0, 12)}…</code></dd></div><div><dt>Receipt chain</dt><dd>{snapshot.receiptChain.verified ? (snapshot.receiptChain.truncated ? `latest ${snapshot.receiptChain.returned} verified` : `${snapshot.receiptChain.count} verified`) : "verification failed"}</dd></div></dl>
-              {!approved && <button className="approve-button" disabled={controlStatus !== "ready"} onClick={approveMitigation}><UserCheck size={16} /> Approve staged change</button>}
-              {approved && status !== "mitigated" && <AlertDialog><AlertDialogTrigger asChild><button className="execute-button">Execute approved change</button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Execute this mitigation?</AlertDialogTitle><AlertDialogDescription>{staged.title} is approved for this simulation. The action will update the service state and record an audit event.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => executeMitigation()}>Execute</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
+              {!approved && !executionAttempted && <button className="approve-button" disabled={controlStatus !== "ready"} onClick={approveMitigation}><UserCheck size={16} /> Approve staged change</button>}
+              {approved && !executionAttempted && <AlertDialog><AlertDialogTrigger asChild><button className="execute-button">Execute approved change</button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Execute this mitigation?</AlertDialogTitle><AlertDialogDescription>{staged.title} is approved for this simulation. The action will update the service state and record an audit event.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => executeMitigation()}>Execute</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
               {status === "mitigated" && <div className="recovered"><Check size={16} /> SLO back within target</div>}
               {status === "monitoring" && <div className="monitoring-result"><AlertTriangle size={16} /> Action applied; SLO remains outside target</div>}
             </div>}
