@@ -58,6 +58,7 @@ type ControlPlaneSnapshot = {
     idempotencyKey: string | null;
     humanApproved: boolean;
     approval: { approvalId: string; approverIdentity: string; approvedAt: string; expiresAt: string; consumedAt: string | null; active: boolean } | null;
+    replay: { actionDigest: string; resourceVersion: number; idempotencyKey: string } | null;
   };
   receiptChain: { count: number; verified: boolean; head: string | null; returned: number; truncated: boolean };
   receipts: ToolReceipt[];
@@ -69,7 +70,7 @@ const initialSnapshot: ControlPlaneSnapshot = {
   incident: { id: "INC-2841", service: "checkout-api", severity: "SEV-2", status: "investigating" },
   telemetry: { p95Latency: "4.8 s", errorRate: "8.7%", saturation: "94%" },
   correlatedChange: { id: "db-pool-842", confidence: 0.93, change: "max connections 120 -> 40" },
-  control: { resourceVersion: 0, staged: null, actionDigest: null, idempotencyKey: null, humanApproved: false, approval: null },
+  control: { resourceVersion: 0, staged: null, actionDigest: null, idempotencyKey: null, humanApproved: false, approval: null, replay: null },
   receiptChain: { count: 0, verified: false, head: null, returned: 0, truncated: false },
   receipts: [],
   audit: [],
@@ -232,11 +233,17 @@ export default function Home() {
     if (!control.actionDigest || !control.idempotencyKey || control.resourceVersion < 1) {
       return { executed: false, reason: "No mitigation is staged.", code: "nothing_staged" };
     }
+    const replay = control.replay;
+    const resourceVersion = replay
+      && replay.actionDigest === control.actionDigest
+      && replay.idempotencyKey === control.idempotencyKey
+      ? replay.resourceVersion
+      : control.resourceVersion;
     try {
       const next = await callControlPlane({
         operation: "execute",
         actionDigest: control.actionDigest,
-        resourceVersion: control.resourceVersion,
+        resourceVersion,
         idempotencyKey: control.idempotencyKey,
         actorChannel,
       });

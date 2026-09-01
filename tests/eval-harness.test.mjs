@@ -30,6 +30,8 @@ test("runs stateless requests with encrypted reasoning continuity and request ID
   assert.match(runner, /x-client-request-id/);
   assert.match(runner, /x-request-id/);
   assert.match(runner, /OPENAI_API_KEY is not configured\. No API request was made/);
+  assert.match(runner, /error instanceof NonRetryableApiError/);
+  assert.match(runner, /if \(stopRun\) break/);
 });
 
 test("blocks fixture execution without approval", async () => {

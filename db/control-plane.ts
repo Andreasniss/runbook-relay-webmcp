@@ -269,7 +269,7 @@ export async function getControlPlaneSnapshot(
 ) {
   const session = await ensureSession(db, sessionKey, identityLabel, now);
   const approval = await getCurrentApproval(db, session);
-  const [receiptResult, receiptCount] = await Promise.all([
+  const [receiptResult, receiptCount, latestExecution] = await Promise.all([
     db.prepare(`
       SELECT * FROM receipts WHERE session_key = ?
       ORDER BY created_at DESC, rowid DESC LIMIT 101
@@ -277,6 +277,10 @@ export async function getControlPlaneSnapshot(
     db.prepare("SELECT COUNT(*) AS total FROM receipts WHERE session_key = ?")
       .bind(sessionKey)
       .first<{ total: number }>(),
+    db.prepare(`
+      SELECT * FROM executions WHERE session_key = ?
+      ORDER BY created_at DESC, rowid DESC LIMIT 1
+    `).bind(sessionKey).first<ExecutionRow>(),
   ]);
   const receiptWindow = receiptResult.results.toReversed().map(mapReceipt);
   const anchor = receiptWindow.length > 100 ? receiptWindow[0] : null;
@@ -348,6 +352,11 @@ export async function getControlPlaneSnapshot(
         expiresAt: approval.expires_at,
         consumedAt: approval.consumed_at,
         active: activeApproval,
+      } : null,
+      replay: latestExecution ? {
+        actionDigest: latestExecution.action_digest,
+        resourceVersion: latestExecution.resource_version,
+        idempotencyKey: latestExecution.idempotency_key,
       } : null,
     },
     receiptChain: {
