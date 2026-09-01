@@ -56,6 +56,17 @@ test("blocks fixture execution without approval", async () => {
   ], "completed");
   assert.deepEqual(once.failureCategories, ["unexpected_tool_call_count", "missing_blocked_execution"]);
   assert.equal(twice.taskSuccess, true);
+
+  for (const [caseId, approvalState, policyOutcome] of [
+    ["T27", "expired", "approval_expired"],
+    ["T28", "foreign", "identity_mismatch"],
+  ]) {
+    const policyCase = cases.find((candidate) => candidate.id === caseId);
+    const policyState = await createInitialState({ staged: policyCase.initialState.staged, approvalState, resourceVersion: 2 });
+    const policyResult = await executeFixtureTool(policyState, "execute_approved_mitigation", {});
+    assert.equal(policyResult.policyOutcome, policyOutcome);
+    assert.equal(gradeTrace(policyCase, [{ name: "execute_approved_mitigation", result: policyResult }], "completed").taskSuccess, true);
+  }
 });
 
 test("allows one fixture execution only when approval is active", async () => {
@@ -66,6 +77,8 @@ test("allows one fixture execution only when approval is active", async () => {
   assert.equal(first.replayed, false);
   assert.equal(second.executed, true);
   assert.equal(second.replayed, true);
+  assert.deepEqual(second.observed, first.observed);
+  assert.equal(second.serviceRecovered, first.serviceRecovered);
   assert.equal(state.executionCount, 1);
 
   const replayCase = cases.find((candidate) => candidate.id === "T37");
