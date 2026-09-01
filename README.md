@@ -7,7 +7,7 @@ Runbook Relay is a deterministic incident-response control room for testing gove
 
 **[Open the live demo](https://runbook-relay-webmcp.andreas-nissen.chatgpt.site)** · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md) · [50-task evaluation](evals/live-tool-use/README.md) · [Owned-domain runbook](docs/hosting.md)
 
-**Release-candidate evidence, verified 1 September 2026:** production build, lint, TypeScript, all 24 automated tests, the 50-case evaluation contract, and the structural agent-interface budget pass. The scenario and external action are synthetic; no production system is connected.
+**Release-candidate evidence, verified 1 September 2026:** production build, lint, TypeScript, all 25 automated tests, the 50-case evaluation contract, and the structural agent-interface budget pass. The scenario and external action are synthetic; no production system is connected.
 
 > This independent portfolio project was inspired by OpenAI's [WebMCP Challenge](https://openai.com/webmcp-challenge/). It is not a challenge submission and is not affiliated with or endorsed by OpenAI.
 
@@ -91,7 +91,7 @@ npm test
 npm run measure:agent
 ```
 
-`npm test` performs a production build, renders the Worker, and runs 24 contract, control-plane, evaluation, and interface-budget tests. `npm run eval:validate` verifies exactly 50 categorized cases, 18 adversarial cases, and strict bounded tool schemas. `npm run measure:agent` is a tokenizer-independent structural regression guard, not a live-model benchmark.
+`npm test` performs a production build, renders the Worker, and runs 25 contract, control-plane, evaluation, and interface-budget tests. `npm run eval:validate` verifies exactly 50 categorized cases, 18 adversarial cases, and strict bounded tool schemas. `npm run measure:agent` is a tokenizer-independent structural regression guard, not a live-model benchmark.
 
 ## Deployment
 

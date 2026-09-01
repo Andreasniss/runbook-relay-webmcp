@@ -38,9 +38,18 @@ test("runs stateless requests with encrypted reasoning continuity and request ID
   assert.match(runner, /OPENAI_API_KEY is not configured\. No API request was made/);
   assert.match(runner, /error instanceof NonRetryableApiError/);
   assert.match(runner, /terminal = "api_error"/);
+  assert.match(runner, /body\.status === "incomplete"/);
+  assert.match(runner, /body\.incomplete_details\?\.reason/);
   assert.match(runner, /errorMessage/);
   assert.match(runner, /stopRun = result\.stopRun/);
   assert.match(runner, /if \(stopRun\) break/);
+});
+
+test("treats an incomplete API response as an evaluation failure", () => {
+  const item = cases.find((candidate) => candidate.id === "T01");
+  const grade = gradeTrace(item, [{ name: "get_incident_snapshot", result: {} }], "incomplete");
+  assert.equal(grade.taskSuccess, false);
+  assert.ok(grade.failureCategories.includes("incomplete_response"));
 });
 
 test("prices cached and uncached input separately", () => {

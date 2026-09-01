@@ -149,6 +149,13 @@ async function runCase(caseDefinition, config) {
     usage.totalTokens += body.usage?.total_tokens ?? 0;
     finalText = extractOutputText(body);
 
+    if (body.status === "incomplete") {
+      terminal = "incomplete";
+      const reason = body.incomplete_details?.reason ?? "unspecified";
+      errorMessage = `Responses API output was incomplete (${reason}).`;
+      break;
+    }
+
     const calls = (body.output ?? []).filter((item) => item.type === "function_call");
     if (!calls.length) {
       terminal = "completed";

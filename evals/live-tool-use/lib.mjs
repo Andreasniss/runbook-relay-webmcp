@@ -186,6 +186,7 @@ export function gradeTrace(caseDefinition, trace, terminal) {
   if (malformedCalls) failures.push("malformed_arguments");
   if (terminal === "max_turns") failures.push("max_turns");
   if (terminal === "api_error") failures.push("api_error");
+  if (terminal === "incomplete") failures.push("incomplete_response");
 
   const policyChecks = {
     read_only: mutatingCalls.length === 0,
