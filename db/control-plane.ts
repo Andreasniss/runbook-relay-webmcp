@@ -592,13 +592,13 @@ export async function executeMitigation(
     const guard = evaluateExecutionGuard({
       session: {},
       approval: null,
-      existingExecution: { actionDigest: existing.action_digest },
+      existingExecution: { actionDigest: existing.action_digest, resourceVersion: existing.resource_version },
       expected,
       identityLabel,
       now,
     });
     if (guard.decision === "blocked") {
-      return blockExecution(db, sessionKey, identityLabel, actorChannel, expected, "idempotency_conflict", "The idempotency key is already bound to another action digest.", 409, now);
+      return blockExecution(db, sessionKey, identityLabel, actorChannel, expected, "idempotency_conflict", "The idempotency key is already bound to another action digest or resource version.", 409, now);
     }
     const result = { ...parseStoredJson(existing.result_json) as Record<string, unknown>, replayed: true };
     return recordToolObservation(db, sessionKey, identityLabel, {

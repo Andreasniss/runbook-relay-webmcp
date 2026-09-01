@@ -84,8 +84,9 @@ test("execution guard fails closed across approval, identity, expiry, and stale-
 });
 
 test("execution guard returns only the prior result for a matching replay", () => {
-  assert.deepEqual(evaluateExecutionGuard({ ...guardBase, existingExecution: { actionDigest: expected.actionDigest } }), { decision: "replay" });
-  assert.equal(evaluateExecutionGuard({ ...guardBase, existingExecution: { actionDigest: "c".repeat(64) } }).code, "idempotency_conflict");
+  assert.deepEqual(evaluateExecutionGuard({ ...guardBase, existingExecution: { actionDigest: expected.actionDigest, resourceVersion: expected.resourceVersion } }), { decision: "replay" });
+  assert.equal(evaluateExecutionGuard({ ...guardBase, existingExecution: { actionDigest: "c".repeat(64), resourceVersion: expected.resourceVersion } }).code, "idempotency_conflict");
+  assert.equal(evaluateExecutionGuard({ ...guardBase, existingExecution: { actionDigest: expected.actionDigest, resourceVersion: expected.resourceVersion + 1 } }).code, "idempotency_conflict");
 });
 
 test("partial external failure produces recovery-required evidence", () => {

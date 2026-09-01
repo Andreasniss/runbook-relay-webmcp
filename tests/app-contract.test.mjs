@@ -37,6 +37,7 @@ test("execution fails closed at the durable server boundary", () => {
   assert.match(controlSource, /createActionDigest/);
   assert.match(controlSource, /createIdempotencyKey/);
   assert.match(controlSource, /INSERT OR IGNORE INTO executions/);
+  assert.match(controlSource, /resourceVersion: existing\.resource_version/);
   assert.match(controlSource, /last_receipt_hash/);
   assert.match(controlSource, /receiptInsertWhenSessionHead/);
   assert.match(controlSource, /ON CONFLICT\(session_key, action_digest, resource_version\) DO UPDATE/);
@@ -59,6 +60,7 @@ test("ships an observable guided test experience", () => {
   assert.match(source, /Run the blocked-action proof/);
   assert.match(source, /runProofSequence/);
   assert.match(source, /five-minute approval/);
+  assert.match(source, /approvalExpiresAt > approvalClock/);
   assert.match(source, /external systems changed/);
   assert.match(source, /Native WebMCP requires desktop/);
   assert.match(source, /Native WebMCP active · 5 tools registered/);

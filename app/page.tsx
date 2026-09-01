@@ -126,15 +126,34 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<MitigationId>("restore-pool");
   const [toolStatus, setToolStatus] = useState<ToolStatus>("detecting");
   const [copiedStep, setCopiedStep] = useState<number | null>(null);
+  const [approvalClock, setApprovalClock] = useState(() => Date.now());
 
   const selected = useMemo(() => mitigations.find((item) => item.id === selectedId) ?? mitigations[0], [selectedId]);
   const staged = snapshot.control.staged;
-  const approved = snapshot.control.humanApproved;
+  const approvalExpiresAt = Date.parse(snapshot.control.approval?.expiresAt ?? "");
+  const approved = snapshot.control.humanApproved
+    && snapshot.control.approval?.active === true
+    && Number.isFinite(approvalExpiresAt)
+    && approvalExpiresAt > approvalClock;
   const status = snapshot.incident.status;
   const receipts = snapshot.receipts;
   const audit = snapshot.audit;
   const stateRef = useRef(snapshot);
   useEffect(() => { stateRef.current = snapshot; }, [snapshot]);
+
+  useEffect(() => {
+    if (!snapshot.control.humanApproved || !Number.isFinite(approvalExpiresAt)) return;
+    const refreshClock = () => setApprovalClock(Date.now());
+    refreshClock();
+    const timer = window.setTimeout(refreshClock, Math.max(0, approvalExpiresAt - Date.now()) + 25);
+    window.addEventListener("focus", refreshClock);
+    document.addEventListener("visibilitychange", refreshClock);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("focus", refreshClock);
+      document.removeEventListener("visibilitychange", refreshClock);
+    };
+  }, [approvalExpiresAt, snapshot.control.humanApproved]);
 
   const callControlPlane = useCallback(async (body: Record<string, unknown>) => {
     const response = await fetch("/api/control-plane", {
