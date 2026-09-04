@@ -5,7 +5,7 @@ Runbook Relay is a deterministic incident-response control room for testing gove
 [![CI](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-77e6ae.svg)](LICENSE)
 
-**[Open the canonical live demo](https://runbook-relay.andreasnissen.dev)** · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md) · [50-task evaluation](evals/live-tool-use/README.md) · [Hosting runbook](docs/hosting.md)
+**[Open the canonical live demo](https://runbook-relay.andreasnissen.dev)** · [Portfolio case study](https://andreasnissen.dev/projects/runbook-relay/) · [Architecture article](https://andreasnissen.dev/writing/from-browser-tool-to-governed-workflow/) · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md) · [50-task evaluation](evals/live-tool-use/README.md) · [Hosting runbook](docs/hosting.md)
 
 **Live deployment evidence, verified 4 September 2026:** the Cloudflare Worker resolves on the canonical domain with valid TLS and HTTP 200. Production build, lint, TypeScript, all 30 automated tests, the 50-case evaluation contract, and the structural agent-interface budget pass. Browser verification covered the blocked-before-approval path, page approval, successful synthetic execution, reset, durable receipts, and the decision log. The test browser did not expose native WebMCP, so native discovery is not claimed. The scenario and external action are synthetic; no production system is connected.
 
