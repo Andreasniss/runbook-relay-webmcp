@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process"
 import { readFile, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { parse, printParseErrorCode } from "jsonc-parser"
 
 const databaseName = "runbook-relay-db"
 const bindingName = "DB"
@@ -63,8 +64,20 @@ export function parseWranglerDatabaseList(stdout) {
   return parsed
 }
 
+export function parseWranglerConfig(source, allowJsonc = false) {
+  if (!allowJsonc) return JSON.parse(source)
+
+  const errors = []
+  const config = parse(source, errors, { allowTrailingComma: true })
+  if (errors.length > 0) {
+    const details = errors.map((error) => printParseErrorCode(error.error)).join(", ")
+    throw new Error(`Wrangler JSONC configuration is invalid: ${details}.`)
+  }
+  return config
+}
+
 async function updateConfig(path, database) {
-  const config = JSON.parse(await readFile(path, "utf8"))
+  const config = parseWranglerConfig(await readFile(path, "utf8"), path.endsWith(".jsonc"))
   await writeFile(path, `${JSON.stringify(bindDatabase(config, database), null, 2)}\n`)
 }
 

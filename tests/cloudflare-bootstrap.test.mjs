@@ -3,6 +3,7 @@ import test from "node:test"
 
 import {
   bindDatabase,
+  parseWranglerConfig,
   parseWranglerDatabaseList,
   resolveDatabase,
 } from "../scripts/resolve-cloudflare-d1.mjs"
@@ -62,4 +63,18 @@ test("parseWranglerDatabaseList tolerates Wrangler prelude output", () => {
   )
 
   assert.equal(parsed[0].uuid, firstId)
+})
+
+test("parseWranglerConfig accepts comments and trailing commas in JSONC", () => {
+  const config = parseWranglerConfig(
+    `{
+      // Wrangler configuration files support JSONC.
+      "name": "runbook-relay",
+      "d1_databases": [{ "binding": "DB", }],
+    }`,
+    true,
+  )
+
+  assert.equal(config.name, "runbook-relay")
+  assert.equal(config.d1_databases[0].binding, "DB")
 })
