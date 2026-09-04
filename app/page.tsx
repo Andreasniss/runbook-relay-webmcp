@@ -367,8 +367,8 @@ export default function Home() {
   const statusCopy = {
     detecting: { title: "Checking WebMCP support", detail: "Feature detection is running.", tone: "detecting" },
     active: { title: "Native WebMCP active · 5 tools registered", detail: "Tools are ready in this page.", tone: "connected" },
-    unavailable: { title: "Native WebMCP unavailable", detail: "Use the ChatGPT desktop Browser or Chrome 149+ with the testing flag.", tone: "unavailable" },
-    failed: { title: "Tool registration failed", detail: "Use the simulator below and inspect the browser console for details.", tone: "failed" },
+    unavailable: { title: "Native WebMCP unavailable", detail: "The no-setup simulator still works in this browser.", tone: "unavailable" },
+    failed: { title: "Tool registration failed", detail: "Use the no-setup simulator below and inspect the browser console for details.", tone: "failed" },
   }[toolStatus];
 
   const controlCopy = {
@@ -397,9 +397,15 @@ export default function Home() {
 
       <section className="webmcp-intro" aria-labelledby="webmcp-intro-title">
         <div className="intro-copy">
-          <span className="section-kicker">New to WebMCP?</span>
-          <h2 id="webmcp-intro-title">A website can expose reliable tools alongside its human interface</h2>
-          <p>WebMCP is an experimental open standard that lets a page describe structured actions an AI agent can discover and call. Instead of guessing where to click, the agent receives named tools with schemas and structured results, while consequential state and approval policy remain enforced by the server.</p>
+          <span className="section-kicker">Start here · no account or extension</span>
+          <h2 id="webmcp-intro-title">See an agent get stopped until the exact action is approved in the page</h2>
+          <p>Run the built-in simulator first. It reads the incident, compares the safe options, stages one mitigation, and proves that the server blocks execution before page approval. Nothing connects to production.</p>
+          <div className="intro-actions">
+            <a className="intro-primary" href="#no-setup-demo"><FlaskConical size={14} /> Try the one-click proof</a>
+            <a href="https://andreasnissen.dev/writing/screen-use-vs-webmcp/" target="_blank" rel="noreferrer"><BookOpen size={14} /> Read the plain-language guide</a>
+          </div>
+          <h3 className="concept-title">What is WebMCP?</h3>
+          <p>WebMCP is an experimental open standard that lets a page describe structured actions an AI agent can discover and call. Instead of guessing where to click, the agent receives named tools with schemas and structured results. The application still decides what is allowed.</p>
           <div className="concept-flow" aria-label="How WebMCP works">
             <span><Laptop size={16} /> This live page</span><ChevronRight size={15} /><span><Wrench size={16} /> Five scoped tools</span><ChevronRight size={15} /><span><Bot size={16} /> Compatible agent</span><ChevronRight size={15} /><span><UserCheck size={16} /> Human approval</span>
           </div>
@@ -413,8 +419,9 @@ export default function Home() {
         </div>
 
         <div className="setup-card">
-          <div className="setup-heading"><Settings2 size={18} /><div><span className="section-kicker">Before you test</span><h3>Native WebMCP requires desktop</h3></div></div>
-          <div className="mobile-limit"><Smartphone size={17} /><div><strong>On a phone or tablet?</strong><span>You can explore the interface and simulator, but mobile browsers cannot run this native Site tools demo.</span></div></div>
+          <div className="setup-heading"><Settings2 size={18} /><div><span className="section-kicker">Optional second step</span><h3>Connect a real browser agent</h3></div></div>
+          <div className="mobile-limit"><Smartphone size={17} /><div><strong>Any browser can run the simulator</strong><span>Native WebMCP requires a supported desktop path. Phones and tablets can still run the no-setup proof.</span></div></div>
+          <p className="provider-label">OpenAI native path</p>
           <ol className="setup-steps">
             <li><span>1</span><div><strong>Use the latest ChatGPT desktop app</strong><small>Start a ChatGPT Work or Codex chat with GPT-5.6 Sol or Terra. Site tools are disabled on Luna.</small></div></li>
             <li><span>2</span><div><strong>Open the built-in Browser</strong><small>Use <code>@Browser</code> or open this site from the desktop app. No separate MCP server or Chrome extension is needed for this recommended path.</small></div></li>
@@ -424,6 +431,10 @@ export default function Home() {
           <details className="chrome-path">
             <summary>Alternative: test in desktop Chrome <ChevronDown size={14} /></summary>
             <p>Use Chrome 149 or newer, open <code>chrome://flags/#enable-webmcp-testing</code>, enable the flag, and relaunch Chrome. To let ChatGPT use your regular Chrome profile, install the ChatGPT browser extension from Settings → Computer Use and select <code>@Chrome</code>. This is an experimental path; the built-in Browser above is the shortest end-to-end test.</p>
+          </details>
+          <details className="chrome-path">
+            <summary>Claude, Cursor, and other MCP clients <ChevronDown size={14} /></summary>
+            <p>These clients need a separate page-to-MCP transport, such as an MCP-B extension or local relay. Runbook Relay does not bundle or claim that path as tested yet. Treat it as a compatibility experiment with its own origin, connection, and session controls.</p>
           </details>
           <a className="setup-link" href="https://learn.chatgpt.com/docs/webmcp" target="_blank" rel="noreferrer">Open official setup guide <ExternalLink size={13} /></a>
         </div>
@@ -451,12 +462,12 @@ export default function Home() {
             ))}
           </div>
 
-          <aside className="simulator-panel" aria-label="WebMCP tool simulator">
-            <div className="simulator-heading"><div className="simulator-icon"><FlaskConical size={18} /></div><div><span className="section-kicker">Works in every browser</span><h3>Agent simulator</h3></div></div>
-            <p>Exercise the same server-side policy and persistence path when native WebMCP is unavailable.</p>
+          <aside className="simulator-panel" id="no-setup-demo" aria-label="WebMCP tool simulator">
+            <div className="simulator-heading"><div className="simulator-icon"><FlaskConical size={18} /></div><div><span className="section-kicker">Start here · works in every browser</span><h3>Try it now, no setup</h3></div></div>
+            <p>Watch a simulated agent call the same server API as native WebMCP. The sequence stops at the approval boundary so you can inspect the evidence before continuing.</p>
             <div className="simulation-warning"><AlertTriangle size={14} /><span>Simulated calls do not prove native browser tool discovery.</span></div>
             <div className="simulator-actions">
-              <button className="sequence-action" disabled={controlStatus !== "ready"} onClick={runProofSequence}><Sparkles size={13} /> Run the blocked-action proof</button>
+              <button className="sequence-action" disabled={controlStatus !== "ready"} onClick={runProofSequence}><Sparkles size={13} /> Run the one-click safety proof</button>
               <button disabled={controlStatus !== "ready"} onClick={() => runSimulation("get_incident_snapshot")}><Play size={13} /> Read snapshot</button>
               <button disabled={controlStatus !== "ready"} onClick={() => runSimulation("compare_mitigations")}><Play size={13} /> Compare low-risk option</button>
               <button disabled={controlStatus !== "ready"} onClick={() => runSimulation("stage_mitigation")}><Play size={13} /> Stage low-risk option</button>

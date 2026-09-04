@@ -11,6 +11,14 @@ Runbook Relay is a deterministic incident-response control room for testing gove
 
 > This independent portfolio project was inspired by OpenAI's [WebMCP Challenge](https://openai.com/webmcp-challenge/). It is not a challenge submission and is not affiliated with or endorsed by OpenAI.
 
+## Start here
+
+- **No setup:** open the live demo and select **Run the one-click safety proof**. The built-in simulator calls the same server control plane as the page tools and stops at the page-approval boundary.
+- **OpenAI native path:** use the latest ChatGPT desktop app with the built-in Browser and Site tools enabled. The page confirms when all five native tools are registered.
+- **Claude, Cursor, and other MCP clients:** these require a separate page-to-MCP transport such as an MCP-B extension or local relay. That compatibility path is not bundled or claimed as tested in this repository.
+
+The simulator proves application policy and durable state without an account or extension. It does not prove native browser tool discovery.
+
 ## What this version proves
 
 | Control | Inspectable implementation |
@@ -30,7 +38,7 @@ The live-model runner is intentionally not presented as empirical evidence yet. 
 ## Review it in three minutes
 
 1. Open the demo on desktop and inspect the **Server control active** status.
-2. Click **Run the blocked-action proof**, or use the five copyable prompts with native WebMCP.
+2. Click **Run the one-click safety proof**, or use the five copyable prompts with native WebMCP.
 3. Verify that pre-approval execution creates a durable blocked receipt.
 4. Stage a mitigation, approve it in the page, execute once, and inspect the action digest, resource version, idempotency key, and receipt hash.
 5. Read the [architecture](docs/architecture.md), [threat model](docs/threat-model.md), and [tests](tests/).

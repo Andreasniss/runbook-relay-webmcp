@@ -61,7 +61,7 @@ test("ships an observable guided test experience", () => {
   assert.match(source, /Simulated calls do not prove native browser tool discovery/);
   assert.match(source, /operation: "snapshot", actorChannel/);
   assert.match(source, /operation: "execute"/);
-  assert.match(source, /Run the blocked-action proof/);
+  assert.match(source, /Run the one-click safety proof/);
   assert.match(source, /runProofSequence/);
   assert.match(source, /five-minute approval/);
   assert.match(source, /approvalExpiresAt > approvalClock/);
@@ -71,12 +71,14 @@ test("ships an observable guided test experience", () => {
   assert.match(source, /Action applied; SLO remains outside target/);
   assert.match(source, /executionAttempted \? "Consumed by execution"/);
   assert.match(source, /external systems changed/);
-  assert.match(source, /Native WebMCP requires desktop/);
+  assert.match(source, /Connect a real browser agent/);
   assert.match(source, /Native WebMCP active · 5 tools registered/);
-  assert.match(source, /mobile browsers cannot run this native Site tools demo/);
+  assert.match(source, /Phones and tablets can still run the no-setup proof/);
   assert.match(source, /Settings → Browser → Permissions/);
   assert.match(source, /chrome:\/\/flags\/#enable-webmcp-testing/);
   assert.match(source, /No separate MCP server or Chrome extension is needed/);
+  assert.match(source, /Try it now, no setup/);
+  assert.match(source, /Claude, Cursor, and other MCP clients/);
 });
 
 test("explains WebMCP and links primary learning resources", () => {
@@ -140,5 +142,5 @@ test("renders the production application", async () => {
   assert.match(html, /Runbook Relay/);
   assert.match(html, /Human-guided incident response/);
   assert.match(html, /Guided WebMCP test/);
-  assert.match(html, /Agent simulator/);
+  assert.match(html, /Try it now, no setup/);
 });
