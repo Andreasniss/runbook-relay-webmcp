@@ -16,6 +16,8 @@ The custom domain improves portability across reviewers. It does not imply that 
 
 `wrangler.jsonc` declares the Worker, custom domain, runtime settings, observability, and binding-only D1 resource. `.openai/hosting.json` declares the same `DB` binding for ChatGPT Sites. `vite.config.ts` packages `.openai/hosting.json` and the immutable Drizzle migration bundle into `dist/.openai` after every production build.
 
+The owned deployment expects one pre-created D1 database named `runbook-relay-db`. After the code gates, the workflow resolves exactly one matching database through the scoped Cloudflare token and injects its identifier only into the ephemeral root and generated Wrangler configuration. The identifier is neither printed nor committed. Remote migrations still complete before the Worker and custom domain are deployed.
+
 The D1 schema has four tables: control sessions, approvals, executions, and receipts. Migrations are generated from `db/schema.ts`, committed under `drizzle/`, and never edited after application.
 
 ## Pre-release gates
@@ -33,7 +35,7 @@ npm run measure:agent
 
 Confirm that:
 
-- all 22 tests pass;
+- all repository tests pass;
 - the production build contains the schema and optimization migrations under `dist/.openai/drizzle/`;
 - `dist/server/wrangler.json` points its D1 migration directory at the packaged relative path;
 - no generated live-evaluation result, API key, account ID, or environment file is included; and
@@ -64,14 +66,13 @@ The workflow runs the complete code gates, applies D1 migrations remotely, and d
 Bootstrap checklist:
 
 1. Confirm the target zone is active and the subdomain has no conflicting record.
-2. Add the two protected environment secrets.
-3. Run the manual workflow from the reviewed `main` commit.
-4. Confirm migration and deployment logs reference that exact commit.
-5. Verify DNS, TLS, security headers, assets, API responses, D1 persistence, approval expiry, blocked execution, replay, reset, and native WebMCP discovery.
-6. Change public links to the owned URL only after all checks pass.
-7. Keep the Sites deployment through a rollback window.
-
-Automatic resource provisioning is convenient for bootstrap but is not a substitute for checking the created D1 resource, environment, location, and migration state in the Cloudflare account.
+2. Create `runbook-relay-db` on the Workers Free plan and verify its intended location before writing data.
+3. Add the two protected environment secrets.
+4. Run the manual workflow from the reviewed `main` commit.
+5. Confirm the ephemeral binding-resolution, migration, and deployment logs reference that exact commit without printing resource identifiers.
+6. Verify DNS, TLS, security headers, assets, API responses, D1 persistence, approval expiry, blocked execution, replay, reset, and native WebMCP discovery.
+7. Change public links to the owned URL only after all checks pass.
+8. Keep the Sites deployment through a rollback window.
 
 ## Rollback
 
