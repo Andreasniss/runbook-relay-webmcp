@@ -398,8 +398,8 @@ export default function Home() {
       <section className="webmcp-intro" aria-labelledby="webmcp-intro-title">
         <div className="intro-copy">
           <span className="section-kicker">Start here · no account or extension</span>
-          <h2 id="webmcp-intro-title">See an agent get stopped until a human approves the exact action</h2>
-          <p>Run the built-in simulator first. It reads the incident, compares the safe options, stages one mitigation, and proves that the server blocks execution before approval. Nothing connects to production.</p>
+          <h2 id="webmcp-intro-title">See an agent get stopped until the exact action is approved in the page</h2>
+          <p>Run the built-in simulator first. It reads the incident, compares the safe options, stages one mitigation, and proves that the server blocks execution before page approval. Nothing connects to production.</p>
           <div className="intro-actions">
             <a className="intro-primary" href="#no-setup-demo"><FlaskConical size={14} /> Try the one-click proof</a>
             <a href="https://andreasnissen.dev/writing/screen-use-vs-webmcp/" target="_blank" rel="noreferrer"><BookOpen size={14} /> Read the plain-language guide</a>
