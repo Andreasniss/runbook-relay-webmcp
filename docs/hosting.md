@@ -1,14 +1,14 @@
 # Hosting decision and release runbook
 
-**Status, 1 September 2026:** the D1-backed release candidate is validated locally. Publishing the public ChatGPT Sites version requires explicit release approval. The owned-domain path remains prepared but blocked on Cloudflare credentials, DNS, TLS, and live verification.
+**Status, 4 September 2026:** the D1-backed Cloudflare Worker is live and verified on the owned domain. The previous ChatGPT Sites deployment remains available only as a temporary rollback path.
 
 ## Targets
 
 | Target | Purpose | Current state |
 |---|---|---|
-| `runbook-relay-webmcp.andreas-nissen.chatgpt.site` | Verified public fallback and first D1-backed release target | Existing public site; new version awaits approval |
-| `runbook-relay.andreasnissen.dev` | Canonical owned-domain demo | Configuration and workflow ready; activation pending |
-| `andreasnissen.dev/projects/runbook-relay/` | Canonical portfolio case study | Keep evidence synchronized after live verification |
+| `runbook-relay.andreasnissen.dev` | Canonical owned-domain demo | Live and verified on Cloudflare Workers |
+| `runbook-relay-webmcp.andreas-nissen.chatgpt.site` | Temporary rollback | Retained and available; not the canonical demo |
+| `andreasnissen.dev/projects/runbook-relay/` | Canonical portfolio case study | Keep its demo link and evidence synchronized with the owned deployment |
 
 The custom domain improves portability across reviewers. It does not imply that Cloudflare, OpenAI, Anthropic, or another provider reviewed or endorsed the project.
 
@@ -16,7 +16,7 @@ The custom domain improves portability across reviewers. It does not imply that 
 
 `wrangler.jsonc` declares the Worker, custom domain, runtime settings, observability, and binding-only D1 resource. `.openai/hosting.json` declares the same `DB` binding for ChatGPT Sites. `vite.config.ts` packages `.openai/hosting.json` and the immutable Drizzle migration bundle into `dist/.openai` after every production build.
 
-The owned deployment expects one pre-created D1 database named `runbook-relay-db`. After the code gates, the workflow resolves exactly one matching database through the scoped Cloudflare token and injects its identifier only into the ephemeral root and generated Wrangler configuration. The identifier is neither printed nor committed. Remote migrations still complete before the Worker and custom domain are deployed.
+The live owned deployment expects one pre-created D1 database named `runbook-relay-db`. After the code gates, the workflow resolves exactly one matching database through the scoped Cloudflare token and injects its identifier only into the ephemeral root and generated Wrangler configuration. The identifier is neither printed nor committed. Remote migrations complete before the Worker and custom domain are deployed.
 
 The D1 schema has four tables: control sessions, approvals, executions, and receipts. Migrations are generated from `db/schema.ts`, committed under `drizzle/`, and never edited after application.
 
@@ -41,22 +41,13 @@ Confirm that:
 - no generated live-evaluation result, API key, account ID, or environment file is included; and
 - README, architecture, threat model, and portfolio evidence boundaries agree.
 
-## ChatGPT Sites release
+## ChatGPT Sites rollback
 
-1. Save a version from the reviewed source commit.
-2. Confirm the version reports the D1 binding and migration bundle.
-3. Because the site is public, obtain explicit approval before deployment.
-4. Deploy only that exact saved version.
-5. Verify the public version identity and application response.
-6. Exercise a new session: snapshot, stage, blocked execution, approval, successful execution, exact replay, reset.
-7. Reload between steps to confirm durable D1 state.
-8. Inspect action digest, version, idempotency key, receipt head, total count, and chain-segment verification.
-9. Verify wide and narrow layouts and the native/fallback labels.
-10. Update portfolio claims only after these checks pass.
+Keep the existing Sites deployment unchanged during the rollback window. If the owned deployment must be rolled back, use the last known-good saved Sites version, obtain explicit approval before any public redeployment, and repeat the complete behavior and visual checks before changing public links. Do not treat the Sites URL as a second canonical demo.
 
 ## Owned Cloudflare release
 
-The manual `Deploy to Cloudflare Workers` GitHub Actions workflow is the preferred path. It requires a protected `cloudflare-production` environment with:
+The manual `Deploy to Cloudflare Workers` GitHub Actions workflow is the production path. It requires a protected `cloudflare-production` environment with:
 
 - `CLOUDFLARE_API_TOKEN`, narrowly scoped for Worker, D1, and custom-domain changes needed by this project;
 - `CLOUDFLARE_ACCOUNT_ID`, for the account owning the `andreasnissen.dev` zone.
@@ -74,19 +65,33 @@ Bootstrap checklist:
 7. Change public links to the owned URL only after all checks pass.
 8. Keep the Sites deployment through a rollback window.
 
+## Live verification
+
+Verification on 4 September 2026 confirmed:
+
+- public A and AAAA resolution through Cloudflare;
+- trusted TLS and HTTP 200 on the canonical URL;
+- the production Worker, D1 binding, custom domain, and proxied Worker DNS record;
+- desktop and narrow rendering, with no console warnings or errors;
+- the visible five-tool contract and correct native-unavailable status in a browser without `document.modelContext`;
+- a durable blocked execution before approval, followed by page approval and one successful synthetic execution;
+- reset to the initial incident state while preserving receipts, plus persistence across reload;
+- visible tool receipts, a verified receipt chain, the decision log, and the expected footer destinations; and
+- zero external systems changed by the deterministic executor.
+
+Native WebMCP discovery was not available in the test browser and is not claimed as verified. The labeled simulator was verified separately. MCP-B, Claude Desktop, Cursor, extension relay, and other-provider compatibility remain future evaluation paths.
+
 ## Rollback
 
 For ChatGPT Sites, redeploy the last known-good saved version. For the owned target, use the Cloudflare Worker version rollback path. Do not roll back the database by editing an applied migration. If an additive schema change must be reverted, create a reviewed forward migration and confirm compatibility with the restored Worker.
 
 If DNS or TLS is unhealthy, keep the portfolio link on the verified Sites fallback. Preserve receipt and execution data long enough to investigate; do not delete a D1 database as part of a routine application rollback.
 
-## External blockers
+## Remaining evidence work
 
-- Public Sites deployment approval
-- Cloudflare account authentication and protected secrets
-- DNS and TLS activation for the owned subdomain
-- Live browser and behavior verification after each deployment
-- A future OpenAI API key and pinned model for empirical 50-task results
+- Verify native WebMCP discovery in a browser that exposes `document.modelContext`.
+- Supply a future OpenAI API key, pinned model, and current pricing inputs before publishing empirical 50-task results.
+- Evaluate any MCP-B or other-provider bridge separately and label its browser, client, transport, and version.
 
 ## References
 
