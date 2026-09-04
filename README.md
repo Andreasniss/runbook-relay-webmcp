@@ -13,7 +13,7 @@ Runbook Relay is a deterministic incident-response control room for testing gove
 
 ## Start here
 
-- **No setup:** open the live demo and select **Run the one-click safety proof**. The built-in simulator calls the same server control plane as the page tools and stops at the human-approval boundary.
+- **No setup:** open the live demo and select **Run the one-click safety proof**. The built-in simulator calls the same server control plane as the page tools and stops at the page-approval boundary.
 - **OpenAI native path:** use the latest ChatGPT desktop app with the built-in Browser and Site tools enabled. The page confirms when all five native tools are registered.
 - **Claude, Cursor, and other MCP clients:** these require a separate page-to-MCP transport such as an MCP-B extension or local relay. That compatibility path is not bundled or claimed as tested in this repository.
 
