@@ -29,6 +29,11 @@ jobs:
       - run: npm run typecheck
       - run: npm run eval:validate
       - run: npm test
+      - name: Resolve existing D1 binding
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/resolve-cloudflare-d1.mjs
       - name: Apply D1 migrations
         uses: cloudflare/wrangler-action@v4
         with:
