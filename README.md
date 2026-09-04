@@ -5,9 +5,9 @@ Runbook Relay is a deterministic incident-response control room for testing gove
 [![CI](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-77e6ae.svg)](LICENSE)
 
-**[Open the live demo](https://runbook-relay-webmcp.andreas-nissen.chatgpt.site)** · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md) · [50-task evaluation](evals/live-tool-use/README.md) · [Owned-domain runbook](docs/hosting.md)
+**[Open the canonical live demo](https://runbook-relay.andreasnissen.dev)** · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md) · [50-task evaluation](evals/live-tool-use/README.md) · [Hosting runbook](docs/hosting.md)
 
-**Release-candidate evidence, verified 1 September 2026:** production build, lint, TypeScript, all 25 automated tests, the 50-case evaluation contract, and the structural agent-interface budget pass. The scenario and external action are synthetic; no production system is connected.
+**Live deployment evidence, verified 4 September 2026:** the Cloudflare Worker resolves on the canonical domain with valid TLS and HTTP 200. Production build, lint, TypeScript, all 30 automated tests, the 50-case evaluation contract, and the structural agent-interface budget pass. Browser verification covered the blocked-before-approval path, page approval, successful synthetic execution, reset, durable receipts, and the decision log. The test browser did not expose native WebMCP, so native discovery is not claimed. The scenario and external action are synthetic; no production system is connected.
 
 > This independent portfolio project was inspired by OpenAI's [WebMCP Challenge](https://openai.com/webmcp-challenge/). It is not a challenge submission and is not affiliated with or endorsed by OpenAI.
 
@@ -79,7 +79,7 @@ npx wrangler d1 migrations apply DB --local
 npm run dev
 ```
 
-The D1 binding is declared without a fixed database ID so supported deployment platforms can provision it. Migration `drizzle/0000_dizzy_karen_page.sql` creates the four durable tables and indexes.
+The D1 binding is declared without a committed database ID. The Cloudflare workflow resolves the pre-created production database into ephemeral runner configuration, while local development uses Wrangler's local D1 store. Migration `drizzle/0000_dizzy_karen_page.sql` creates the four durable tables and indexes.
 
 ## Quality gates
 
@@ -91,11 +91,11 @@ npm test
 npm run measure:agent
 ```
 
-`npm test` performs a production build, renders the Worker, and runs 25 contract, control-plane, evaluation, and interface-budget tests. `npm run eval:validate` verifies exactly 50 categorized cases, 18 adversarial cases, and strict bounded tool schemas. `npm run measure:agent` is a tokenizer-independent structural regression guard, not a live-model benchmark.
+`npm test` performs a production build, renders the Worker, and runs 30 contract, control-plane, deployment-bootstrap, evaluation, and interface-budget tests. `npm run eval:validate` verifies exactly 50 categorized cases, 18 adversarial cases, and strict bounded tool schemas. `npm run measure:agent` is a tokenizer-independent structural regression guard, not a live-model benchmark.
 
 ## Deployment
 
-The public ChatGPT Sites target receives the D1 migration bundle in `dist/.openai/drizzle`. The owned Cloudflare target applies remote D1 migrations before deploying the Worker to `runbook-relay.andreasnissen.dev`. The custom-domain cutover remains pending Cloudflare authentication, DNS, TLS, and post-deploy checks; see [docs/hosting.md](docs/hosting.md).
+The canonical deployment is live on Cloudflare Workers at [runbook-relay.andreasnissen.dev](https://runbook-relay.andreasnissen.dev). The protected GitHub Actions workflow resolves the existing D1 binding without printing or committing its identifier, applies remote migrations, and then deploys the Worker and custom domain. The previous [ChatGPT Sites deployment](https://runbook-relay-webmcp.andreas-nissen.chatgpt.site) is retained only as a temporary rollback path; see [docs/hosting.md](docs/hosting.md).
 
 ## Evidence boundaries
 
