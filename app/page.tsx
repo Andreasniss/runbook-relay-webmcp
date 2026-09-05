@@ -76,6 +76,27 @@ const initialSnapshot: ControlPlaneSnapshot = {
   audit: [],
 };
 
+const starterPrompts = [
+  {
+    id: 101,
+    title: "ChatGPT desktop",
+    hint: "Paste into a chat with browser access. Keep the demo in that same browser tab when you approve.",
+    prompt: "Open https://runbook-relay.andreasnissen.dev/ in your built-in browser. Test this synthetic incident-response demo. First check whether you can discover its five native WebMCP tools; report what is actually available. If available, read the incident, compare mitigations, and stage the lowest-risk option using those tools. Otherwise, clearly label the fallback and click Start guided demo to use the page simulator. Do not approve anything or click Approve staged change. Stop at the proposed change, show me where to review it in the same browser tab, and wait for me to approve it myself. Do not change real systems or claim a simulator run proves native WebMCP support.",
+  },
+  {
+    id: 102,
+    title: "Claude Code or another browser agent",
+    hint: "Requires browser control already connected to your agent. This is a UI test prompt, not a bundled Claude or MCP-B integration.",
+    prompt: "Use your connected browser control to open https://runbook-relay.andreasnissen.dev/ and test the guided demo through its visible UI. If you cannot control a browser, stop and explain what capability is missing; do not claim you tested it. Click Start guided demo, inspect the proposed fix and blocked-before-approval receipt, then stop. Show me the same browser tab and the Review staged change link so I can click Approve staged change myself. Never click approval for me, bypass the page through direct API calls, or change real systems. Label this as a browser UI test of the simulator, not native WebMCP or MCP-B compatibility verification.",
+  },
+  {
+    id: 103,
+    title: "After you approve in the page",
+    hint: "Return to the same agent chat and send this only after clicking Approve staged change yourself. Approval expires after five minutes.",
+    prompt: "I clicked Approve staged change myself in the Runbook Relay page. In the same browser tab at https://runbook-relay.andreasnissen.dev/, check that the current staged change has a valid approval. If it does not, stop and ask me to review it again; do not approve or restage it yourself. If approved, execute it once using the same test path as before, then verify the actual service metrics, execution receipt, and decision log. Report whether the simulated service recovered and whether you used native WebMCP or the browser UI simulator. Do not reset the demo or change real systems.",
+  },
+];
+
 const demoSteps = [
   { number: 1, label: "Discover", prompt: "List the WebMCP tools exposed by this page. Do not call them.", expected: "Five governed tools are listed; durable incident state does not change." },
   { number: 2, label: "Investigate and stage", prompt: "Investigate INC-2841, compare the mitigations, and stage the lowest-risk option. Do not execute anything.", expected: "Restore database pool limit is staged for human review." },
@@ -128,6 +149,14 @@ export default function Home() {
   const [toolStatus, setToolStatus] = useState<ToolStatus>("detecting");
   const [copiedStep, setCopiedStep] = useState<number | null>(null);
   const [demoBusy, setDemoBusy] = useState(false);
+  const nativeGuideRef = useRef<HTMLDetailsElement>(null);
+  const openNativeGuide = () => { if (nativeGuideRef.current) nativeGuideRef.current.open = true; };
+  useEffect(() => {
+    const revealGuide = () => { if (window.location.hash === "#native-testing") openNativeGuide(); };
+    revealGuide();
+    window.addEventListener("hashchange", revealGuide);
+    return () => window.removeEventListener("hashchange", revealGuide);
+  }, []);
   const [approvalClock, setApprovalClock] = useState(() => Date.now());
 
   const selected = useMemo(() => mitigations.find((item) => item.id === selectedId) ?? mitigations[0], [selectedId]);
@@ -391,7 +420,7 @@ export default function Home() {
         <div className="brand"><div className="brand-mark"><GitPullRequestArrow size={18} /></div><div><strong>Runbook Relay</strong><span>Human-guided incident response</span></div></div>
         <div className="topbar-actions">
           <span className={`tool-status ${controlCopy.tone}`}><ServerCog size={14} /><span>{controlCopy.label}</span></span>
-          <span className={`tool-status ${statusCopy.tone}`}><Sparkles size={14} /><span>{statusCopy.title}</span></span>
+          <a className={`tool-status native-help-link ${statusCopy.tone}`} href="#native-testing" onClick={openNativeGuide} aria-label={`${statusCopy.title}. Open browser setup and starter prompts`}><Sparkles size={14} /><span>{statusCopy.title} · Help</span></a>
           <a href="https://github.com/Andreasniss/runbook-relay-webmcp" target="_blank" rel="noreferrer">Source <ChevronRight size={14} /></a>
         </div>
       </header>
@@ -401,8 +430,14 @@ export default function Home() {
         <a className={staged && !approved && !executionAttempted ? "review-pending" : ""} href="#execution-control">{staged && !approved && !executionAttempted ? "Review staged change" : "Execution control"}</a>
         <a href="#tool-receipts">Receipts</a>
         <a href="#decision-log">Decision log</a>
-        <a href="#native-testing">Use your own agent</a>
+        <a href="#native-testing" onClick={openNativeGuide}>Use your own agent</a>
       </nav>
+
+      {(toolStatus === "unavailable" || toolStatus === "failed") && <aside className="browser-help" aria-label="Browser tool availability">
+        <strong>{toolStatus === "unavailable" ? "Your browser has not exposed native WebMCP tools." : "Native browser tools could not be registered."} You can still try the demo.</strong>
+        <p>WebMCP lets a compatible AI agent use this page’s tools directly. It is optional: the guided simulator works without it and still demonstrates the human-approval boundary.</p>
+        <div><a href="#no-setup-demo">Use the guided simulator <ChevronRight size={14} /></a><a href="#native-testing" onClick={openNativeGuide}>Browser setup and agent prompts <ChevronRight size={14} /></a></div>
+      </aside>}
 
       <section className="incident-strip" aria-label="Active incident summary">
         <div className="incident-title"><span className={`status-light ${status}`} /><div><span className="eyebrow">INC-2841 · SEV-2 · CHECKOUT-API</span><h1>{incidentHeading}</h1></div></div>
@@ -479,8 +514,21 @@ export default function Home() {
         </aside>
       </section>
 
-      <details className="optional-native" id="native-testing">
+      <details className="optional-native" id="native-testing" ref={nativeGuideRef}>
         <summary><div><span className="section-kicker">Optional · for browser-agent users</span><h2>Test with your own AI agent</h2><p>Setup instructions and prompts to copy into your agent chat. Copying a prompt does not run it.</p></div><ChevronDown size={20} /></summary>
+      <section className="starter-prompts" aria-labelledby="starter-prompts-title">
+        <h2 id="starter-prompts-title">Copy a starting prompt</h2>
+        <p>Choose your agent, copy the prompt, then paste and send it in its chat. Each prompt includes the live demo link. You make the approval click yourself in the browser your agent is using.</p>
+        <div className="starter-grid">
+          {starterPrompts.map((starter) => <article className="starter-card" key={starter.id}>
+            <h3>{starter.title}</h3>
+            <p>{starter.hint}</p>
+            <textarea aria-label={`${starter.title} prompt`} readOnly value={starter.prompt} rows={7} />
+            <button className="copy-button" onClick={() => copyPrompt(starter.id, starter.prompt)} aria-label={`Copy ${starter.title} prompt`}>{copiedStep === starter.id ? <Check size={14} /> : <Copy size={14} />}<span aria-live="polite">{copiedStep === starter.id ? "Copied" : "Copy prompt"}</span></button>
+          </article>)}
+        </div>
+        <p className="starter-note">If copying is unavailable, select the prompt text above and copy it manually. Claude Code and other-provider integration are not verified here; an MCP-B bridge remains a separate future compatibility path.</p>
+      </section>
       <section className="webmcp-intro" aria-labelledby="webmcp-intro-title">
         <div className="intro-copy">
           <span className="section-kicker">About native browser tools</span>
@@ -520,7 +568,7 @@ export default function Home() {
           </details>
           <details className="chrome-path">
             <summary>Claude, Cursor, and other MCP clients <ChevronDown size={14} /></summary>
-            <p>These clients need a separate page-to-MCP transport, such as an MCP-B extension or local relay. Runbook Relay does not bundle or claim that path as tested yet. Treat it as a compatibility experiment with its own origin, connection, and session controls.</p>
+            <p>For a visible UI test, use the starting prompt above with browser control already connected to your agent. Accessing the page tools as MCP tools requires a separate page-to-MCP transport, such as an MCP-B extension or local relay. Runbook Relay does not bundle or claim that path as tested yet. Treat it as a compatibility experiment with its own origin, connection, and session controls.</p>
           </details>
           <a className="setup-link" href="https://learn.chatgpt.com/docs/webmcp" target="_blank" rel="noreferrer">Open official setup guide <ExternalLink size={13} /></a>
         </div>

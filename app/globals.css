@@ -370,6 +370,21 @@ footer a:hover, footer a:focus-visible { color: var(--green); text-decoration: u
 .optional-native > summary h2 { font-size: 22px; margin: 8px 0; }
 .optional-native > summary p { font-size: 14px; color: #a4b5aa; margin: 0; line-height: 1.5; }
 .optional-native[open] > summary > svg { transform: rotate(180deg); }
+.starter-prompts { margin: 0 16px 24px; padding: 20px; border: 1px solid var(--line); border-radius: 10px; }
+.starter-prompts > h2 { margin: 0 0 10px; font-size: 24px; }
+.starter-prompts p { color: #a4b5aa; font-size: 14px; line-height: 1.6; }
+.starter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 16px; margin-top: 20px; }
+.starter-card { min-width: 0; padding: 16px; background: #111e17; border: 1px solid var(--line); border-radius: 8px; }
+.starter-card h3 { font-size: 18px; margin: 0; }
+.starter-card textarea { display: block; width: 100%; box-sizing: border-box; resize: vertical; padding: 12px; margin: 14px 0; border: 1px solid #456352; border-radius: 6px; background: #09120d; color: #d4e3d9; font: inherit; font-size: 14px; line-height: 1.6; }
+.starter-card textarea:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+.starter-card .copy-button { display: flex; }
+.topbar-actions .native-help-link { display: flex; padding: 7px 10px; font-size: 11px; }
+.browser-help { width: min(1240px, calc(100% - 36px)); box-sizing: border-box; margin: 20px auto; padding: 18px; border: 1px solid #5d4a2b; border-radius: 10px; background: #231d13; }
+.browser-help strong { font-size: 15px; color: #efdbb4; }
+.browser-help p { color: #c4baa8; line-height: 1.6; font-size: 14px; margin: 8px 0; }
+.browser-help > div { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+.browser-help a { display: inline-flex; align-items: center; min-height: 44px; gap: 6px; color: var(--green); font-size: 14px; }
 .optional-native .webmcp-intro, .optional-native .test-lab { width: calc(100% - 32px); }
 .optional-native .demo-steps { grid-template-columns: 1fr; }
 .optional-native .step-copy strong { font-size: 16px; }
