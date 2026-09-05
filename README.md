@@ -19,6 +19,14 @@ Runbook Relay is a deterministic incident-response control room for testing gove
 
 The simulator proves application policy and durable state without an account or extension. It does not prove native browser tool discovery.
 
+### Copy a starting prompt
+
+Expand **Test with your own AI agent** on the [live demo](https://runbook-relay.andreasnissen.dev/#native-testing). The first section provides copy-ready prompts with the canonical URL for **ChatGPT desktop**, **Claude Code or another browser agent**, and a follow-up to send **after you approve in the page**. Prompts are also selectable for manual copying.
+
+The ChatGPT prompt checks for native tools and labels any simulator fallback. The Claude Code prompt requires already-connected browser control and tests the visible simulator UI; it does not establish native WebMCP or MCP-B compatibility. Both stop for your own approval click in the same browser session. No prompt installs a bridge or grants approval on your behalf.
+
+The WebMCP status in the header links to this guidance. When native tools are unavailable or registration fails, an explanation near the top offers both the guided simulator and browser setup. Opening either setup link expands the guide automatically.
+
 ## What this version proves
 
 | Control | Inspectable implementation |
