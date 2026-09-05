@@ -398,10 +398,10 @@ export default function Home() {
 
       <nav className="review-nav" aria-label="Review this demo">
         <a href="#no-setup-demo">Try the demo</a>
-        <a href="#native-testing">Use your own agent</a>
         <a className={staged && !approved && !executionAttempted ? "review-pending" : ""} href="#execution-control">{staged && !approved && !executionAttempted ? "Review staged change" : "Execution control"}</a>
         <a href="#tool-receipts">Receipts</a>
         <a href="#decision-log">Decision log</a>
+        <a href="#native-testing">Use your own agent</a>
       </nav>
 
       <section className="incident-strip" aria-label="Active incident summary">
