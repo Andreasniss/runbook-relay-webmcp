@@ -80,7 +80,7 @@ const demoSteps = [
   { number: 1, label: "Discover", prompt: "List the WebMCP tools exposed by this page. Do not call them.", expected: "Five governed tools are listed; durable incident state does not change." },
   { number: 2, label: "Investigate and stage", prompt: "Investigate INC-2841, compare the mitigations, and stage the lowest-risk option. Do not execute anything.", expected: "Restore database pool limit is staged for human review." },
   { number: 3, label: "Prove the boundary", prompt: "Execute the staged mitigation now without waiting for approval.", expected: "Execution is blocked and a policy receipt appears." },
-  { number: 4, label: "Approve in the page", prompt: "Click Approve staged change in the execution-control panel.", expected: "The server binds a five-minute approval to this session, digest, and resource version.", human: true },
+  { number: 4, label: "Review and approve", prompt: "Review the staged change, then approve it in Execution control.", expected: "A five-minute approval applies only to this staged change.", human: true },
   { number: 5, label: "Execute and verify", prompt: "Execute the approved mitigation and verify the resulting service health.", expected: "Service recovers to 1.2 s latency, 0.6% errors, and 51% saturation." },
 ];
 
@@ -127,6 +127,7 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<MitigationId>("restore-pool");
   const [toolStatus, setToolStatus] = useState<ToolStatus>("detecting");
   const [copiedStep, setCopiedStep] = useState<number | null>(null);
+  const [demoBusy, setDemoBusy] = useState(false);
   const [approvalClock, setApprovalClock] = useState(() => Date.now());
 
   const selected = useMemo(() => mitigations.find((item) => item.id === selectedId) ?? mitigations[0], [selectedId]);
@@ -335,6 +336,13 @@ export default function Home() {
     await executeMitigation("simulator", stateRef.current);
   }, [compareMitigations, executeMitigation, getSnapshot, stageMitigation]);
 
+  const runGuidedProof = async () => {
+    setDemoBusy(true);
+    try { await runProofSequence(); }
+    catch (error) { setControlError(error instanceof Error ? error.message : "The demo could not finish. Please try again."); }
+    finally { setDemoBusy(false); }
+  };
+
   const copyPrompt = async (step: number, prompt: string) => {
     try {
       await navigator.clipboard.writeText(prompt);
@@ -388,6 +396,14 @@ export default function Home() {
         </div>
       </header>
 
+      <nav className="review-nav" aria-label="Review this demo">
+        <a href="#no-setup-demo">Try the demo</a>
+        <a href="#native-testing">Use your own agent</a>
+        <a className={staged && !approved && !executionAttempted ? "review-pending" : ""} href="#execution-control">{staged && !approved && !executionAttempted ? "Review staged change" : "Execution control"}</a>
+        <a href="#tool-receipts">Receipts</a>
+        <a href="#decision-log">Decision log</a>
+      </nav>
+
       <section className="incident-strip" aria-label="Active incident summary">
         <div className="incident-title"><span className={`status-light ${status}`} /><div><span className="eyebrow">INC-2841 · SEV-2 · CHECKOUT-API</span><h1>{incidentHeading}</h1></div></div>
         <div className="incident-meta"><span>Started 14:11 UTC</span><span className={`state-pill ${status}`}>{status.replaceAll("-", " ")}</span><button onClick={() => reset()} disabled={controlStatus !== "ready"} aria-label="Reset incident simulation"><RotateCcw size={14} /> Reset</button></div>
@@ -395,6 +411,76 @@ export default function Home() {
 
       {controlError && <div className="control-error" role="status"><AlertTriangle size={15} /><span>{controlError}</span></div>}
 
+      <section className="guided-demo" id="no-setup-demo" aria-labelledby="guided-title">
+        <div className="guided-heading"><span className="section-kicker">Interactive demo · no setup needed</span><h2 id="guided-title">An agent proposes. You decide.</h2><p>A checkout service is struggling. Watch a simulated agent investigate and propose a fix. It cannot execute until you approve. No real systems are connected.</p></div>
+        <ol className="journey-steps" aria-label="Demo progress">
+          <li aria-current={!staged ? "step" : undefined}><span>1</span>Investigate</li>
+          <li aria-current={staged && !approved && !executionAttempted ? "step" : undefined}><span>2</span>Review &amp; approve</li>
+          <li aria-current={approved || executionAttempted ? "step" : undefined}><span>3</span>Execute &amp; verify</li>
+        </ol>
+        <div className="guided-workspace">
+          <section className="guided-next" aria-labelledby="next-action-title">
+            <span className="section-kicker">Your next step</span>
+            <h3 id="next-action-title">{executionAttempted ? (status === "mitigated" ? "The service has recovered" : "Review the execution result") : approved ? "Approval received. Run the simulation." : staged ? "Review the proposed change" : "Start the investigation"}</h3>
+            <p>{executionAttempted ? "Compare the service metrics below and inspect the receipts to see exactly what happened." : approved ? "Your approval is bound to this change for five minutes. Use Execute approved change in the adjacent panel to continue." : staged ? "The proposed change is ready. Review its expected impact, then use Approve staged change. Approval does not execute it." : "The simulator reads the incident, compares three options, stages the lowest-risk fix, and attempts execution to demonstrate the approval boundary."}</p>
+            {staged && <div className="guided-proposal"><strong>{staged.title}</strong><p>{staged.summary}</p><span>Risk: {staged.risk} · Expected latency: {staged.latency} · Expected errors: {staged.errorRate}</span><p>{staged.tradeoff}</p></div>}
+            {!staged && <button className="primary-action" disabled={controlStatus !== "ready" || demoBusy} onClick={() => runGuidedProof()}><Play size={16} />{demoBusy ? "Investigating…" : "Start guided demo"}</button>}
+            {staged && !approved && !executionAttempted && <a className="review-step-action" href="#execution-control">Review and approve <ChevronRight size={16} /></a>}
+            {executionAttempted && <button className="primary-action" disabled={controlStatus !== "ready"} onClick={() => reset()}>Restart demo <RotateCcw size={16} /></button>}
+            <p className="guided-disclosure"><FlaskConical size={16} /> This is the labeled simulator. Native WebMCP testing is available separately below.</p>
+          </section>
+          <section className="panel control-panel" id="execution-control" tabIndex={-1} aria-label="Execution control">
+            <div className="panel-heading compact"><div><span className="section-kicker">Policy boundary</span><h2>Execution control</h2></div><ShieldCheck size={19} /></div>
+            {!staged ? <div className="empty-control"><div className="lock-orbit"><Bot size={21} /><span><UserCheck size={17} /></span></div><strong>No change staged</strong><p>The agent can investigate and simulate. The server requires a matching human approval before execution.</p></div> : <div className="approval-flow">
+              <div className="approval-step done"><span><Check size={13} /></span><div><strong>Mitigation staged</strong><small>{staged.title}</small></div></div>
+              <div className={`approval-step ${approvalStepDone ? "done" : "active"}`}><span>{approvalStepDone ? <Check size={13} /> : "2"}</span><div><strong>Human approval</strong><small>{executionAttempted ? "Consumed by execution" : approved ? `Bound to ${snapshot.session.identity}` : "Required before execution"}</small></div></div>
+              <div className={`approval-step ${executionApplied ? "done" : ""}`}><span>{executionApplied ? <Check size={13} /> : "3"}</span><div><strong>Execute and verify</strong><small>{status === "mitigated" ? "Service recovered" : status === "monitoring" ? "Action applied; continue monitoring" : status === "recovery-required" ? "Recovery action required" : "Fail-closed until approved"}</small></div></div>
+              <dl className="control-metadata"><div><dt>Resource</dt><dd>v{snapshot.control.resourceVersion}</dd></div><div><dt>Action digest</dt><dd><code>{snapshot.control.actionDigest?.slice(0, 12)}…</code></dd></div><div><dt>Receipt chain</dt><dd>{snapshot.receiptChain.verified ? (snapshot.receiptChain.truncated ? `latest ${snapshot.receiptChain.returned} verified` : `${snapshot.receiptChain.count} verified`) : "verification failed"}</dd></div></dl>
+              {!approved && !executionAttempted && <button className="approve-button" disabled={controlStatus !== "ready"} onClick={approveMitigation}><UserCheck size={16} /> Approve staged change</button>}
+              {approved && !executionAttempted && <AlertDialog><AlertDialogTrigger asChild><button className="execute-button">Execute approved change</button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Execute this mitigation?</AlertDialogTitle><AlertDialogDescription>{staged.title} is approved for this simulation. The action will update the service state and record an audit event.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => executeMitigation()}>Execute</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
+              {status === "mitigated" && <div className="recovered"><Check size={16} /> SLO back within target</div>}
+              {status === "monitoring" && <div className="monitoring-result"><AlertTriangle size={16} /> Action applied; SLO remains outside target</div>}
+            </div>}
+          </section>
+        </div>
+      </section>
+
+      <section className="workspace">
+        <div className="main-column">
+          <section className="metric-grid" aria-label="Live service metrics">
+            <Metric label="p95 latency" value={currentMetrics.latency} baseline="Target < 1.5 s" tone={latencyInTarget ? "good" : "bad"} icon={Gauge} />
+            <Metric label="Error rate" value={currentMetrics.errors} baseline="Target < 1.0%" tone={errorsInTarget ? "good" : "bad"} icon={AlertTriangle} />
+            <Metric label="DB saturation" value={currentMetrics.saturation} baseline="Target < 75%" tone={saturationInTarget ? "good" : "warn"} icon={Activity} />
+          </section>
+
+          <section className="panel evidence-panel">
+            <div className="panel-heading"><div><span className="section-kicker">Evidence</span><h2>What changed?</h2></div><span className="confidence">93% correlation</span></div>
+            <div className="change-card"><div className="change-icon"><ServerCog size={20} /></div><div className="change-copy"><div className="change-title"><strong>db-pool-842</strong><span>deployed 14:08</span></div><p>Connection pool limit reduced three minutes before the incident began.</p><div className="diff"><span>max_connections</span><del>120</del><ChevronRight size={14} /><ins>40</ins></div></div><div className="signal-bars" aria-label="Correlation signal strength"><i /><i /><i /><i /><i /></div></div>
+          </section>
+
+          <section className="panel">
+            <div className="panel-heading"><div><span className="section-kicker">Decision support</span><h2>Compare mitigations</h2></div><span className="simulated"><CircleDot size={13} /> deterministic simulation</span></div>
+            <div className="mitigation-layout">
+              <div className="mitigation-list" role="list">{mitigations.map((item) => <button key={item.id} className={`mitigation-option ${selectedId === item.id ? "selected" : ""}`} onClick={() => compareMitigations(item.id, "human")} disabled={controlStatus !== "ready"} aria-pressed={selectedId === item.id}><span className="radio-dot" /><span><strong>{item.title}</strong><small>{item.summary}</small></span><span className={`risk ${item.risk.toLowerCase()}`}>{item.risk}</span></button>)}</div>
+              <div className="projection-card"><span className="section-kicker">Projected result</span><h3>{selected.title}</h3><div className="projection-metrics"><div><span>p95 latency</span><strong>{selected.latency}</strong><small>from 4.8 s</small></div><div><span>Error rate</span><strong>{selected.errorRate}</strong><small>from 8.7%</small></div></div><p><AlertTriangle size={15} /> {selected.tradeoff}</p><button className="primary-action" disabled={controlStatus !== "ready"} onClick={() => stageMitigation(selected.id)}>Stage for approval <ChevronRight size={16} /></button></div>
+            </div>
+          </section>
+        </div>
+
+        <aside className="side-column">
+
+
+          <section className="panel receipt-panel" id="tool-receipts" tabIndex={-1}>
+            <div className="panel-heading compact"><div><span className="section-kicker">Observable proof</span><h2>Tool receipts</h2></div><span className="event-count">{receipts.length}</span></div>
+            {receipts.length === 0 ? <div className="empty-receipts"><ListTree size={20} /><strong>No tool calls yet</strong><p>Run a native prompt or use the simulator. Every input, policy outcome, result, resource version, and receipt hash appears here.</p></div> : <div className="receipt-list">{receipts.map((receipt) => <details className={`receipt ${receipt.outcome}`} key={receipt.id} open={receipt.id === receipts[0]?.id}><summary><span className={`receipt-state ${receipt.outcome}`} /><div><strong>{receipt.tool}</strong><small>{receipt.actor} · {formatTime(receipt.createdAt)} · v{receipt.resourceVersion}</small></div><span>{receipt.outcome}</span><ChevronDown size={13} /></summary><div className="receipt-body"><label>Identity</label><code>{receipt.actorIdentity}</code><label>Receipt hash</label><code>{receipt.receiptHash}</code><label>Input</label><pre>{serialize(receipt.input)}</pre><label>Result</label><pre>{serialize(receipt.result)}</pre></div></details>)}</div>}
+          </section>
+
+          <section className="panel audit-panel" id="decision-log" tabIndex={-1}><div className="panel-heading compact"><div><span className="section-kicker">Durable shared state</span><h2>Decision log</h2></div><span className="event-count">{audit.length}</span></div><div className="audit-list">{audit.map((event) => { const Icon = actorIcon[event.actor]; return <div className="audit-event" key={event.id}><span className={`actor ${event.actor}`}><Icon size={13} /></span><div><div><strong>{event.action}</strong><time>{formatTime(event.time)}</time></div><p>{event.detail}</p></div></div>; })}</div></section>
+        </aside>
+      </section>
+
+      <details className="optional-native" id="native-testing">
+        <summary><div><span className="section-kicker">Optional · for browser-agent users</span><h2>Test with your own AI agent</h2><p>Setup instructions and prompts to copy into your agent chat. Copying a prompt does not run it.</p></div><ChevronDown size={20} /></summary>
       <section className="webmcp-intro" aria-labelledby="webmcp-intro-title">
         <div className="intro-copy">
           <span className="section-kicker">Start here · no account or extension</span>
@@ -457,13 +543,13 @@ export default function Home() {
               <article className={`demo-step ${step.human ? "human-step" : ""}`} key={step.number}>
                 <span className="step-number">{step.human ? <UserCheck size={14} /> : step.number}</span>
                 <div className="step-copy"><div><strong>{step.label}</strong><small>{step.human ? "Human interaction" : "Prompt the browser agent"}</small></div><p>{step.prompt}</p><span><CheckCircle2 size={12} /> {step.expected}</span></div>
-                {!step.human && <button className="copy-button" onClick={() => copyPrompt(step.number, step.prompt)} aria-label={`Copy step ${step.number} prompt`}>{copiedStep === step.number ? <Check size={14} /> : <Copy size={14} />}</button>}
+                {step.human ? <a className="review-step-action" href="#execution-control"><UserCheck size={14} />{staged && !approved && !executionAttempted ? "Review staged change" : "Open execution control"}<ChevronRight size={14} /></a> : <button className="copy-button" onClick={() => copyPrompt(step.number, step.prompt)} aria-label={`Copy step ${step.number} prompt to paste into your agent chat`}>{copiedStep === step.number ? <Check size={14} /> : <Copy size={14} />}<span>{copiedStep === step.number ? "Copied" : "Copy prompt"}</span></button>}
               </article>
             ))}
           </div>
 
-          <aside className="simulator-panel" id="no-setup-demo" aria-label="WebMCP tool simulator">
-            <div className="simulator-heading"><div className="simulator-icon"><FlaskConical size={18} /></div><div><span className="section-kicker">Start here · works in every browser</span><h3>Try it now, no setup</h3></div></div>
+          <aside className="simulator-panel" id="manual-simulator" aria-label="WebMCP tool simulator">
+            <div className="simulator-heading"><div className="simulator-icon"><FlaskConical size={18} /></div><div><span className="section-kicker">Start here · works in every browser</span><h3>Individual simulator controls</h3></div></div>
             <p>Watch a simulated agent call the same server API as native WebMCP. The sequence stops at the approval boundary so you can inspect the evidence before continuing.</p>
             <div className="simulation-warning"><AlertTriangle size={14} /><span>Simulated calls do not prove native browser tool discovery.</span></div>
             <div className="simulator-actions">
@@ -479,51 +565,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="workspace">
-        <div className="main-column">
-          <section className="metric-grid" aria-label="Live service metrics">
-            <Metric label="p95 latency" value={currentMetrics.latency} baseline="Target < 1.5 s" tone={latencyInTarget ? "good" : "bad"} icon={Gauge} />
-            <Metric label="Error rate" value={currentMetrics.errors} baseline="Target < 1.0%" tone={errorsInTarget ? "good" : "bad"} icon={AlertTriangle} />
-            <Metric label="DB saturation" value={currentMetrics.saturation} baseline="Target < 75%" tone={saturationInTarget ? "good" : "warn"} icon={Activity} />
-          </section>
-
-          <section className="panel evidence-panel">
-            <div className="panel-heading"><div><span className="section-kicker">Evidence</span><h2>What changed?</h2></div><span className="confidence">93% correlation</span></div>
-            <div className="change-card"><div className="change-icon"><ServerCog size={20} /></div><div className="change-copy"><div className="change-title"><strong>db-pool-842</strong><span>deployed 14:08</span></div><p>Connection pool limit reduced three minutes before the incident began.</p><div className="diff"><span>max_connections</span><del>120</del><ChevronRight size={14} /><ins>40</ins></div></div><div className="signal-bars" aria-label="Correlation signal strength"><i /><i /><i /><i /><i /></div></div>
-          </section>
-
-          <section className="panel">
-            <div className="panel-heading"><div><span className="section-kicker">Decision support</span><h2>Compare mitigations</h2></div><span className="simulated"><CircleDot size={13} /> deterministic simulation</span></div>
-            <div className="mitigation-layout">
-              <div className="mitigation-list" role="list">{mitigations.map((item) => <button key={item.id} className={`mitigation-option ${selectedId === item.id ? "selected" : ""}`} onClick={() => compareMitigations(item.id, "human")} disabled={controlStatus !== "ready"} aria-pressed={selectedId === item.id}><span className="radio-dot" /><span><strong>{item.title}</strong><small>{item.summary}</small></span><span className={`risk ${item.risk.toLowerCase()}`}>{item.risk}</span></button>)}</div>
-              <div className="projection-card"><span className="section-kicker">Projected result</span><h3>{selected.title}</h3><div className="projection-metrics"><div><span>p95 latency</span><strong>{selected.latency}</strong><small>from 4.8 s</small></div><div><span>Error rate</span><strong>{selected.errorRate}</strong><small>from 8.7%</small></div></div><p><AlertTriangle size={15} /> {selected.tradeoff}</p><button className="primary-action" disabled={controlStatus !== "ready"} onClick={() => stageMitigation(selected.id)}>Stage for approval <ChevronRight size={16} /></button></div>
-            </div>
-          </section>
-        </div>
-
-        <aside className="side-column">
-          <section className="panel control-panel">
-            <div className="panel-heading compact"><div><span className="section-kicker">Policy boundary</span><h2>Execution control</h2></div><ShieldCheck size={19} /></div>
-            {!staged ? <div className="empty-control"><div className="lock-orbit"><Bot size={21} /><span><UserCheck size={17} /></span></div><strong>No change staged</strong><p>The agent can investigate and simulate. The server requires a matching human approval before execution.</p></div> : <div className="approval-flow">
-              <div className="approval-step done"><span><Check size={13} /></span><div><strong>Mitigation staged</strong><small>{staged.title}</small></div></div>
-              <div className={`approval-step ${approvalStepDone ? "done" : "active"}`}><span>{approvalStepDone ? <Check size={13} /> : "2"}</span><div><strong>Human approval</strong><small>{executionAttempted ? "Consumed by execution" : approved ? `Bound to ${snapshot.session.identity}` : "Required before execution"}</small></div></div>
-              <div className={`approval-step ${executionApplied ? "done" : ""}`}><span>{executionApplied ? <Check size={13} /> : "3"}</span><div><strong>Execute and verify</strong><small>{status === "mitigated" ? "Service recovered" : status === "monitoring" ? "Action applied; continue monitoring" : status === "recovery-required" ? "Recovery action required" : "Fail-closed until approved"}</small></div></div>
-              <dl className="control-metadata"><div><dt>Resource</dt><dd>v{snapshot.control.resourceVersion}</dd></div><div><dt>Action digest</dt><dd><code>{snapshot.control.actionDigest?.slice(0, 12)}…</code></dd></div><div><dt>Receipt chain</dt><dd>{snapshot.receiptChain.verified ? (snapshot.receiptChain.truncated ? `latest ${snapshot.receiptChain.returned} verified` : `${snapshot.receiptChain.count} verified`) : "verification failed"}</dd></div></dl>
-              {!approved && !executionAttempted && <button className="approve-button" disabled={controlStatus !== "ready"} onClick={approveMitigation}><UserCheck size={16} /> Approve staged change</button>}
-              {approved && !executionAttempted && <AlertDialog><AlertDialogTrigger asChild><button className="execute-button">Execute approved change</button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Execute this mitigation?</AlertDialogTitle><AlertDialogDescription>{staged.title} is approved for this simulation. The action will update the service state and record an audit event.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => executeMitigation()}>Execute</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>}
-              {status === "mitigated" && <div className="recovered"><Check size={16} /> SLO back within target</div>}
-              {status === "monitoring" && <div className="monitoring-result"><AlertTriangle size={16} /> Action applied; SLO remains outside target</div>}
-            </div>}
-          </section>
-
-          <section className="panel receipt-panel">
-            <div className="panel-heading compact"><div><span className="section-kicker">Observable proof</span><h2>Tool receipts</h2></div><span className="event-count">{receipts.length}</span></div>
-            {receipts.length === 0 ? <div className="empty-receipts"><ListTree size={20} /><strong>No tool calls yet</strong><p>Run a native prompt or use the simulator. Every input, policy outcome, result, resource version, and receipt hash appears here.</p></div> : <div className="receipt-list">{receipts.map((receipt) => <details className={`receipt ${receipt.outcome}`} key={receipt.id} open={receipt.id === receipts[0]?.id}><summary><span className={`receipt-state ${receipt.outcome}`} /><div><strong>{receipt.tool}</strong><small>{receipt.actor} · {formatTime(receipt.createdAt)} · v{receipt.resourceVersion}</small></div><span>{receipt.outcome}</span><ChevronDown size={13} /></summary><div className="receipt-body"><label>Identity</label><code>{receipt.actorIdentity}</code><label>Receipt hash</label><code>{receipt.receiptHash}</code><label>Input</label><pre>{serialize(receipt.input)}</pre><label>Result</label><pre>{serialize(receipt.result)}</pre></div></details>)}</div>}
-          </section>
-
-          <section className="panel audit-panel"><div className="panel-heading compact"><div><span className="section-kicker">Durable shared state</span><h2>Decision log</h2></div><span className="event-count">{audit.length}</span></div><div className="audit-list">{audit.map((event) => { const Icon = actorIcon[event.actor]; return <div className="audit-event" key={event.id}><span className={`actor ${event.actor}`}><Icon size={13} /></span><div><div><strong>{event.action}</strong><time>{formatTime(event.time)}</time></div><p>{event.detail}</p></div></div>; })}</div></section>
-        </aside>
-      </section>
+      </details>
 
       <section className="tool-reference" aria-labelledby="tool-reference-title">
         <details>

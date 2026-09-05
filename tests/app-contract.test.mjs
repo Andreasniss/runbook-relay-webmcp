@@ -77,7 +77,7 @@ test("ships an observable guided test experience", () => {
   assert.match(source, /Settings → Browser → Permissions/);
   assert.match(source, /chrome:\/\/flags\/#enable-webmcp-testing/);
   assert.match(source, /No separate MCP server or Chrome extension is needed/);
-  assert.match(source, /Try it now, no setup/);
+  assert.match(source, /Start guided demo/);
   assert.match(source, /Claude, Cursor, and other MCP clients/);
 });
 
@@ -142,5 +142,5 @@ test("renders the production application", async () => {
   assert.match(html, /Runbook Relay/);
   assert.match(html, /Human-guided incident response/);
   assert.match(html, /Guided WebMCP test/);
-  assert.match(html, /Try it now, no setup/);
+  assert.match(html, /Start guided demo/);
 });
