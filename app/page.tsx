@@ -483,9 +483,9 @@ export default function Home() {
         <summary><div><span className="section-kicker">Optional · for browser-agent users</span><h2>Test with your own AI agent</h2><p>Setup instructions and prompts to copy into your agent chat. Copying a prompt does not run it.</p></div><ChevronDown size={20} /></summary>
       <section className="webmcp-intro" aria-labelledby="webmcp-intro-title">
         <div className="intro-copy">
-          <span className="section-kicker">Start here · no account or extension</span>
-          <h2 id="webmcp-intro-title">See an agent get stopped until the exact action is approved in the page</h2>
-          <p>Run the built-in simulator first. It reads the incident, compares the safe options, stages one mitigation, and proves that the server blocks execution before page approval. Nothing connects to production.</p>
+          <span className="section-kicker">About native browser tools</span>
+          <h2 id="webmcp-intro-title">Let your agent use the same five tools</h2>
+          <p>The guided demo uses a simulator. This optional path lets a compatible browser agent discover and call the page tools itself. Copy a prompt below, paste it into your agent chat, and send it. You still approve the proposed change on this page.</p>
           <div className="intro-actions">
             <a className="intro-primary" href="#no-setup-demo"><FlaskConical size={14} /> Try the one-click proof</a>
             <a href="https://andreasnissen.dev/writing/screen-use-vs-webmcp/" target="_blank" rel="noreferrer"><BookOpen size={14} /> Read the plain-language guide</a>
@@ -542,14 +542,14 @@ export default function Home() {
             {demoSteps.map((step) => (
               <article className={`demo-step ${step.human ? "human-step" : ""}`} key={step.number}>
                 <span className="step-number">{step.human ? <UserCheck size={14} /> : step.number}</span>
-                <div className="step-copy"><div><strong>{step.label}</strong><small>{step.human ? "Human interaction" : "Prompt the browser agent"}</small></div><p>{step.prompt}</p><span><CheckCircle2 size={12} /> {step.expected}</span></div>
+                <div className="step-copy"><div><strong>{step.label}</strong><small>{step.human ? "Your action on this page" : "Copy, paste into agent chat, then send"}</small></div><p>{step.prompt}</p><span><CheckCircle2 size={12} /> Expected result: {step.expected}</span></div>
                 {step.human ? <a className="review-step-action" href="#execution-control"><UserCheck size={14} />{staged && !approved && !executionAttempted ? "Review staged change" : "Open execution control"}<ChevronRight size={14} /></a> : <button className="copy-button" onClick={() => copyPrompt(step.number, step.prompt)} aria-label={`Copy step ${step.number} prompt to paste into your agent chat`}>{copiedStep === step.number ? <Check size={14} /> : <Copy size={14} />}<span>{copiedStep === step.number ? "Copied" : "Copy prompt"}</span></button>}
               </article>
             ))}
           </div>
 
           <aside className="simulator-panel" id="manual-simulator" aria-label="WebMCP tool simulator">
-            <div className="simulator-heading"><div className="simulator-icon"><FlaskConical size={18} /></div><div><span className="section-kicker">Start here · works in every browser</span><h3>Individual simulator controls</h3></div></div>
+            <div className="simulator-heading"><div className="simulator-icon"><FlaskConical size={18} /></div><div><span className="section-kicker">Advanced · run one simulated step</span><h3>Individual simulator controls</h3></div></div>
             <p>Watch a simulated agent call the same server API as native WebMCP. The sequence stops at the approval boundary so you can inspect the evidence before continuing.</p>
             <div className="simulation-warning"><AlertTriangle size={14} /><span>Simulated calls do not prove native browser tool discovery.</span></div>
             <div className="simulator-actions">
