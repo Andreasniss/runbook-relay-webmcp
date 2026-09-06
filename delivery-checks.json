@@ -1,6 +1,6 @@
 {
   "checks": [
-    {"name": "skill behavior", "argv": ["python3", "-m", "unittest", "discover", "-s", "skills/evidence-sdlc/tests"], "timeout_seconds": 60},
+    {"name": "skill behavior", "argv": ["python3", "-m", "unittest", "discover", "-s", "skills/ai-sdlc-skill/tests"], "timeout_seconds": 60},
     {"name": "lint", "argv": ["npm", "run", "lint"], "timeout_seconds": 180},
     {"name": "types", "argv": ["npm", "run", "typecheck"], "timeout_seconds": 180},
     {"name": "eval structure", "argv": ["npm", "run", "eval:validate"], "timeout_seconds": 60},
