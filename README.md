@@ -134,6 +134,8 @@ See [SECURITY.md](SECURITY.md) for responsible reporting guidance.
 
 ## References
 
+- [MCP vs. CLI vs. WebMCP: What Changes When Agents Can Use the Computer?](https://andreasnissen.dev/writing/mcp-cli-webmcp-computer-use/) — an interface comparison using this incident workflow, including where page tools help and where an existing route is sufficient.
+
 - [OpenAI Site tools documentation](https://learn.chatgpt.com/docs/webmcp)
 - [WebMCP explainer and specification work](https://github.com/webmachinelearning/webmcp)
 - [Chrome WebMCP documentation](https://developer.chrome.com/docs/ai/webmcp)
