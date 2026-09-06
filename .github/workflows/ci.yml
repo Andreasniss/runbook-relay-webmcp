@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+      - name: Verify reusable skill behavior
+        run: python3 -m unittest discover -s skills/evidence-sdlc/tests -v
       - name: Check public repository privacy
         env:
           PRIVACY_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
