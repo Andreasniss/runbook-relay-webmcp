@@ -41,3 +41,18 @@ next-env.d.ts
 /.sites-runtime/
 /outputs/
 /work/
+
+# Local authoring and execution artifacts
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+*.log
+*.har
+private-authoring/
+transcripts/
+
+.envrc
+.envrc.*
+.direnv/

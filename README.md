@@ -144,3 +144,7 @@ See [SECURITY.md](SECURITY.md) for responsible reporting guidance.
 ## License
 
 [MIT](LICENSE)
+
+## Contributing safely
+
+Read [the publication privacy boundary](PRIVACY.md) and install the local Git hooks before uploading changes. Private authoring stays outside public branches and PRs; intentional demo prompts and reviewed engineering evidence remain public.
