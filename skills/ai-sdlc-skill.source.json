@@ -1,0 +1,16 @@
+{
+  "repository": "https://github.com/Andreasniss/ai-sdlc-skill",
+  "commit": "793ca27f23b336e21b50972919146c9bfcacaba2",
+  "path": "skills/ai-sdlc-skill",
+  "version": "0.2.0",
+  "sha256": {
+    "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "README.md": "061fa2db3ea5ffce42ed53c5d11c235739a6012b3c5d4663fe185eb13cae3dd1",
+    "SKILL.md": "6aed34c646e5c092c30d9ea62bd7ae1cafce87e1947184139cedf6d36d492459",
+    "agents/openai.yaml": "5368f77cad6557f498ee77b3bc54424ce8ccab912963c9536d703500936e3281",
+    "references/adoption.md": "a5543a11f699ae216bcf1a2b08df22de8a18d57b825e801dc5920c0b4033f8dc",
+    "references/sources.md": "7788dbd42345ac4ebe29c8ad1e5f9df72005422f006bb2ed10d796fe9490596e",
+    "scripts/verify.py": "62d047f84989f1e4807891bec55b9fffe6f08811e39e03042f974365d462ceed",
+    "tests/test_verify.py": "88fd4ac32002f59c25311d9bde56170358e169dccc3ab08cf2fab3edd1fd9a87"
+  }
+}
