@@ -19,8 +19,21 @@ jobs:
       name: cloudflare-production
       url: https://runbook-relay.andreasnissen.dev
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Check public repository privacy
+        env:
+          PRIVACY_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          PRIVACY_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 scripts/test_privacy.py
+          if [ -n "$PRIVACY_BASE" ]; then
+            python3 scripts/check_privacy.py --range "$PRIVACY_BASE" "$PRIVACY_HEAD"
+          else
+            python3 scripts/check_privacy.py --head
+          fi
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -35,14 +48,14 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/resolve-cloudflare-d1.mjs
       - name: Apply D1 migrations
-        uses: cloudflare/wrangler-action@v4
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: d1 migrations apply DB --remote
           wranglerVersion: "4.127.1"
       - name: Deploy Worker and custom domain
-        uses: cloudflare/wrangler-action@v4
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
