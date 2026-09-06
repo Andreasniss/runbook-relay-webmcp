@@ -8,28 +8,23 @@ Version 0.2.0. Skill identifier and invocation: `ai-sdlc-skill` and `$ai-sdlc-sk
 
 Read [SKILL.md](SKILL.md) for the workflow and [adoption.md](references/adoption.md) for execution limits. The bundle has no Python package dependencies. Its optional helper needs Python 3.10+, Git, and a POSIX environment. It does not install hooks, change permissions, or authorize releases.
 
-From this bundle's directory, run its deterministic tests:
+Start with [common cases and example prompts](references/common-cases.md), including a new project and initialization of an undocumented codebase. The skill can guide these tasks without its optional helper.
 
-```sh
-python3 -m unittest discover -s tests -v
-```
+The helper runs a project's reviewed check commands and records results for a clean commit. To evaluate or change the helper itself, run `python3 -m unittest discover -s tests -v` from this bundle's directory. These are the runner's regression tests; they do not test your application or confirm that an agent loaded the skill.
 
 The initial [7DayFocus pilot](https://github.com/Andreasniss/7dayfocus-ai-delivery-lab/blob/main/docs/evidence-sdlc-pilot.md) and [Runbook Relay pilot](https://github.com/Andreasniss/runbook-relay-webmcp/blob/main/docs/evidence-sdlc-pilot.md) record repository integration and verification results. They do not establish faster delivery, better model judgment, or interactive runtime compatibility.
 
-## Install a reviewed revision
+## Install
 
-Obtain a source checkout at a reviewed full commit SHA. From the source repository root, use one installation location for the runtime you are using. Do not install multiple copies in the same runtime's discovery paths.
-
-For Claude Code personal skills:
+From your project directory:
 
 ```sh
-mkdir -p "$HOME/.claude/skills"
-test ! -e "$HOME/.claude/skills/ai-sdlc-skill" && cp -R skills/ai-sdlc-skill "$HOME/.claude/skills/ai-sdlc-skill"
+npx skills@latest add Andreasniss/ai-sdlc-skill --skill ai-sdlc-skill
 ```
 
-For Codex, use its current documented skill-installation flow with this bundle's directory. Repository instructions can also explicitly link `skills/ai-sdlc-skill/SKILL.md`, as both pilots do. Verify discovery in the actual runtime before claiming installation success. File copying alone does not test agent invocation.
+Choose your coding agent and scope in the installer. Use the [cross-assistant installation guide](https://github.com/Andreasniss/ai-sdlc-skill/blob/main/INSTALLATION.md) for reviewed revision pinning, manual installation, chat-only hosts, invocation, and a first task to check discovery and behavior.
 
-Try a bounded request: “Use $ai-sdlc-skill to correct this documentation example. Preserve existing repository rules, choose the appropriate planning depth, and report the checks you actually ran.” The expected outcome is a scoped change with evidence. Existing mandatory acceptance requirements still apply.
+Copy the complete bundle. Native installation, manually supplied instructions, and verified execution are different states. Preserve existing repository rules and report required checks that the host cannot run.
 
 ## Migrate from evidence-sdlc
 
@@ -39,7 +34,7 @@ The pilot repositories retain their original dated evidence records. Historical 
 
 ## Updates and the standalone repository
 
-The canonical source is [Andreasniss/ai-sdlc-skill](https://github.com/Andreasniss/ai-sdlc-skill). Pin a reviewed full source commit in each adopter, verify the bundle contents and tests, and update through a PR. Never silently download or replace skills on agent startup. Repository-specific `delivery-checks.json` files stay with their applications.
+The canonical source is [Andreasniss/ai-sdlc-skill](https://github.com/Andreasniss/ai-sdlc-skill). Ordinary CLI installations use `npx skills@latest update ai-sdlc-skill` after preserving local edits. For reproducible team adoption, pin a reviewed full source commit, verify the bundle and tests, and update through a PR. Never silently replace skills on agent startup. Repository-specific `delivery-checks.json` files stay with their applications.
 
 The initial implementation and rename were verified in the two pilot repositories before extraction. Only installation documentation changed during extraction. The pilot bundles remain earlier reviewed copies until explicitly updated; they are not automatic mirrors.
 

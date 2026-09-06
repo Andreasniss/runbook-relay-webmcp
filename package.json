@@ -69,5 +69,6 @@
     "wrangler": "4.127.1"
   },
   "type": "module",
-  "displayName": "Runbook Relay"
+  "displayName": "Runbook Relay",
+  "license": "Apache-2.0"
 }

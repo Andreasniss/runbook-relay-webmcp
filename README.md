@@ -1,9 +1,10 @@
 # Runbook Relay
 
+[Built by Andreas Nissen](https://github.com/Andreasniss) · [andreasnissen.dev](https://andreasnissen.dev) · [Connect on LinkedIn](https://www.linkedin.com/in/andreasnissen) · [Source on GitHub](https://github.com/Andreasniss/runbook-relay-webmcp) · [Apache-2.0](LICENSE)
+
 Runbook Relay is a deterministic incident-response control room for testing governed human-agent collaboration. A browser agent can inspect an incident, compare bounded mitigations, stage an action, and request execution through [WebMCP](https://github.com/webmachinelearning/webmcp). A server-side control plane decides whether execution is allowed.
 
 [![CI](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-77e6ae.svg)](LICENSE)
 
 **[Open the canonical live demo](https://runbook-relay.andreasnissen.dev)** · [Portfolio case study](https://andreasnissen.dev/projects/runbook-relay/) · [Architecture article](https://andreasnissen.dev/writing/from-browser-tool-to-governed-workflow/) · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md) · [50-task evaluation](evals/live-tool-use/README.md) · [Hosting runbook](docs/hosting.md)
 
@@ -143,7 +144,7 @@ See [SECURITY.md](SECURITY.md) for responsible reporting guidance.
 
 ## License
 
-[MIT](LICENSE)
+[Apache-2.0](LICENSE). See [NOTICE](NOTICE) for copyright and [third-party notices](THIRD_PARTY_NOTICES.md) for exceptions and the earlier MIT grant.
 
 ## Contributing safely
 
@@ -155,4 +156,8 @@ This repository pilots [AI SDLC Skill](skills/ai-sdlc-skill/SKILL.md), an indepe
 
 ## Canonical delivery skill
 
-The bundled [AI SDLC Skill](skills/ai-sdlc-skill/README.md) is pinned to the reviewed [standalone source](https://github.com/Andreasniss/ai-sdlc-skill/tree/793ca27f23b336e21b50972919146c9bfcacaba2). The [source manifest](skills/ai-sdlc-skill.source.json) records the exact commit and each file digest. Updates require a reviewed PR; the repository never downloads skill updates automatically.
+The bundled [AI SDLC Skill](skills/ai-sdlc-skill/README.md) is pinned to the reviewed [standalone source](https://github.com/Andreasniss/ai-sdlc-skill/tree/811c549bf772cfac6ad285faf374ca32a7e820d1). The [source manifest](skills/ai-sdlc-skill.source.json) records the exact commit and each file digest. Updates require a reviewed PR; the repository never downloads skill updates automatically.
+
+## Reuse and contributions
+
+Copyright 2026 Andreas Nissen. Original project code and accompanying technical documentation are licensed under [Apache-2.0](LICENSE), except where separately indicated. See [NOTICE](NOTICE). Third-party dependencies and bundled material retain their own terms. Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, verification, and contribution expectations.
