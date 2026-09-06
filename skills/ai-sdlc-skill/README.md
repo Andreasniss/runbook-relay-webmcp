@@ -39,9 +39,9 @@ The pilot repositories retain their original dated evidence records. Historical 
 
 ## Updates and the standalone repository
 
-The initial source is in 7DayFocus. A dedicated `ai-sdlc-skill` repository is planned but is not yet published. After it exists, pin the reviewed source commit in each adopter, verify the bundle contents and tests, and update through a PR. Never silently download or replace skills on agent startup.
+The canonical source is [Andreasniss/ai-sdlc-skill](https://github.com/Andreasniss/ai-sdlc-skill). Pin a reviewed full source commit in each adopter, verify the bundle contents and tests, and update through a PR. Never silently download or replace skills on agent startup. Repository-specific `delivery-checks.json` files stay with their applications.
 
-The dedicated repository should keep `skills/ai-sdlc-skill/`, the Apache-2.0 license, a root README linking this guide, and CI running the bundle tests. Its release must carry the exact source revision and measured compatibility. Repository-specific `delivery-checks.json` files stay with their applications.
+The initial implementation and rename were verified in the two pilot repositories before extraction. Only installation documentation changed during extraction. The pilot bundles remain earlier reviewed copies until explicitly updated; they are not automatic mirrors.
 
 ## Evidence and authority
 

@@ -152,3 +152,7 @@ Read [the publication privacy boundary](PRIVACY.md) and install the local Git ho
 ## Reusable delivery workflow
 
 This repository pilots [AI SDLC Skill](skills/ai-sdlc-skill/SKILL.md), an independently written adaptation of selected [Anthropic AI-native SDLC guidance](https://claude.com/blog/the-ai-native-sdlc-playbook). The skill preserves existing instructions and separates planning, verification evidence, review, and release authority. See the [adoption guide](skills/ai-sdlc-skill/references/adoption.md) and [pilot record](docs/evidence-sdlc-pilot.md). This is an experimental delivery aid, not a security boundary or evidence of measured productivity gains.
+
+## Canonical delivery skill
+
+The bundled [AI SDLC Skill](skills/ai-sdlc-skill/README.md) is pinned to the reviewed [standalone source](https://github.com/Andreasniss/ai-sdlc-skill/tree/793ca27f23b336e21b50972919146c9bfcacaba2). The [source manifest](skills/ai-sdlc-skill.source.json) records the exact commit and each file digest. Updates require a reviewed PR; the repository never downloads skill updates automatically.
