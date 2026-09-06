@@ -148,3 +148,7 @@ See [SECURITY.md](SECURITY.md) for responsible reporting guidance.
 ## Contributing safely
 
 Read [the publication privacy boundary](PRIVACY.md) and install the local Git hooks before uploading changes. Private authoring stays outside public branches and PRs; intentional demo prompts and reviewed engineering evidence remain public.
+
+## Reusable delivery workflow
+
+This repository pilots [Evidence SDLC](skills/evidence-sdlc/SKILL.md), an independently written adaptation of selected [Anthropic AI-native SDLC guidance](https://claude.com/blog/the-ai-native-sdlc-playbook). The skill preserves existing instructions and separates planning, verification evidence, review, and release authority. See the [adoption guide](skills/evidence-sdlc/references/adoption.md) and [pilot record](docs/evidence-sdlc-pilot.md). This is an experimental delivery aid, not a security boundary or evidence of measured productivity gains.
