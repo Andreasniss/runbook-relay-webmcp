@@ -1,16 +1,18 @@
 {
   "repository": "https://github.com/Andreasniss/ai-sdlc-skill",
-  "commit": "793ca27f23b336e21b50972919146c9bfcacaba2",
+  "commit": "811c549bf772cfac6ad285faf374ca32a7e820d1",
   "path": "skills/ai-sdlc-skill",
   "version": "0.2.0",
   "sha256": {
     "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
-    "README.md": "061fa2db3ea5ffce42ed53c5d11c235739a6012b3c5d4663fe185eb13cae3dd1",
-    "SKILL.md": "6aed34c646e5c092c30d9ea62bd7ae1cafce87e1947184139cedf6d36d492459",
-    "agents/openai.yaml": "5368f77cad6557f498ee77b3bc54424ce8ccab912963c9536d703500936e3281",
+    "NOTICE": "bd9135e4d138b752e0f945848777f41ddd79d81b6c9ed0f1cf12a5cc118b14ab",
+    "README.md": "7f49d455a7ec29887329fc318d3b298862217555ee6e3e9d06ea4c985ec5328f",
+    "SKILL.md": "463f48d88313cfb8e646e1a7a09a28dc09de6dc5e633fb69607772d1952889c0",
+    "agents/openai.yaml": "361dc1854f956f76cd296bca3936de229e54944161361c343b398b61b97691f2",
     "references/adoption.md": "a5543a11f699ae216bcf1a2b08df22de8a18d57b825e801dc5920c0b4033f8dc",
+    "references/common-cases.md": "0bf02636019a4e8e98a19a6bc4106c5e0689a8c4dfb8d84bfdeb39bc28023760",
     "references/sources.md": "7788dbd42345ac4ebe29c8ad1e5f9df72005422f006bb2ed10d796fe9490596e",
-    "scripts/verify.py": "62d047f84989f1e4807891bec55b9fffe6f08811e39e03042f974365d462ceed",
-    "tests/test_verify.py": "88fd4ac32002f59c25311d9bde56170358e169dccc3ab08cf2fab3edd1fd9a87"
+    "scripts/verify.py": "aeeed39a82b8c748ff41477ccb6ea5c3f41772b01e0bb3dbfff288d2bd3996c6",
+    "tests/test_verify.py": "e6a7d40834538322cbcc9b3a10a656380e52792daa0a64ee0d7b8782c2861218"
   }
 }
