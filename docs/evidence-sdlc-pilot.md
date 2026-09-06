@@ -2,7 +2,7 @@
 
 Status: local repository pilot passed, 2026-09-06. Hosted CI and publication are tracked by the delivery PR.
 
-Andreas authorized a reusable delivery skill and pilots in 7DayFocus and Runbook Relay. This pilot adopts the independently written `skills/evidence-sdlc` bundle from 7DayFocus with repository-owned commands. No third-party community skill implementation is included.
+Andreas authorized a reusable delivery skill and pilots in 7DayFocus and Runbook Relay. This pilot adopts the independently written `skills/ai-sdlc-skill` bundle from 7DayFocus with repository-owned commands. No third-party community skill implementation is included.
 
 Intent: preserve Runbook Relay's lighter planning process, CI and privacy checks while making verification and review evidence explicit. The skill's material-change path applies to this integration; a future small reversible edit can use the quick path where repository rules permit.
 
@@ -15,3 +15,7 @@ Observed local result at `31748492e82c73d2c1a1018964f3b6cf1032d49a`: 12 skill te
 Independent agent review ran the 12 helper tests and additional isolated probes. It found one wording overclaim about continuous cleanliness; the guide now explicitly limits observation to command endpoints. The reviewer confirmed the correction. Workflow-depth and approval scenarios were textual walkthroughs, not measured autonomous agent runs. No outstanding findings from that review remained.
 
 The two pilots establish repository integration and deterministic behavior only. They do not establish fewer interruptions, faster delivery, lower defect rates, or live Claude Code/Codex invocation compatibility. A future bounded feature change can measure those outcomes before broader rollout.
+
+## Identifier migration
+
+Andreas approved the `ai-sdlc-skill` identifier and standalone packaging on 2026-09-06. Version 0.2.0 renames the bundle and invocation from `evidence-sdlc`; the earlier pilot results above concern version 0.1.0. Current instructions, CI, and check configuration use the new path. The standalone repository has not been created yet. Its source revision will become the update authority only after publication and verification.

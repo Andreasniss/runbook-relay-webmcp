@@ -4,4 +4,4 @@ Read `PRIVACY.md` before preparing any public commit or PR. Keep private authori
 
 ## Reusable delivery skill
 
-For implementation and review work, read [Evidence SDLC](skills/evidence-sdlc/SKILL.md). Preserve the requirements above and existing authorization; the skill adds no merge or deployment authority. Repository-specific checks are in `delivery-checks.json`.
+For implementation and review work, read [AI SDLC Skill](skills/ai-sdlc-skill/SKILL.md). Preserve the requirements above and existing authorization; the skill adds no merge or deployment authority. Repository-specific checks are in `delivery-checks.json`.

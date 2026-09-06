@@ -1,11 +1,11 @@
 ---
-name: evidence-sdlc
+name: ai-sdlc-skill
 description: Carry a software change from intent through verification and review, preserving repository rules and evidence for the exact revision. Use for implementing or reviewing changes in existing repositories and adopting an AI-assisted delivery workflow.
 metadata:
-  version: 0.1.0
+  version: 0.2.0
 ---
 
-# Evidence SDLC
+# AI SDLC Skill
 
 Make the requested change reviewable with the smallest useful process. This is Andreas Nissen's independent adaptation of selected Anthropic guidance. Instructions guide decisions; they do not enforce permissions.
 

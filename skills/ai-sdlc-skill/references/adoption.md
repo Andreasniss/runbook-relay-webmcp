@@ -1,10 +1,10 @@
 # Adopt without replacing the repository
 
-Version 0.1.0. The skill is portable text with an optional Python 3.10+ helper for POSIX systems. Claude Code and Codex interactive installation behavior must be verified in the user's runtime; repository-level pilots do not establish identical runtime behavior.
+Version 0.2.0. The skill is portable text with an optional Python 3.10+ helper for POSIX systems. Claude Code and Codex interactive installation behavior must be verified in the user's runtime; repository-level pilots do not establish identical runtime behavior.
 
 1. Review the bundle at a pinned Git commit. Inspect existing skills, instructions, hooks, CI and licenses.
 2. Use the runtime's documented skill-installation mechanism, or copy the folder into its supported skill directory only if the destination does not exist. Do not overwrite a same-named skill or replace AGENTS.md, CLAUDE.md, hooks or permissions. Keep the source revision with the installation record. This bundle does not install hooks.
-3. For repository use, keep it under `skills/evidence-sdlc/` and link SKILL.md from existing instructions. This is an explicit repository routing link, not proof of automatic skill discovery.
+3. For repository use, keep it under `skills/ai-sdlc-skill/` and link SKILL.md from existing instructions. This is an explicit repository routing link, not proof of automatic skill discovery.
 4. Run a bounded change and compare behavior with existing requirements. Keep check commands in a repository-owned configuration; review them as executable code before use. Never run an untrusted PR's commands with secrets or deployment credentials.
 
 ## Optional verification report
@@ -18,7 +18,7 @@ A configuration contains one non-empty `checks` list. Each entry has a unique `n
 Commit the candidate and run from the repository root:
 
 ```sh
-python3 skills/evidence-sdlc/scripts/verify.py --config delivery-checks.json
+python3 skills/ai-sdlc-skill/scripts/verify.py --config delivery-checks.json
 ```
 
 The helper prints only status, check names, return codes, timestamps, and revision/configuration identity. It discards child output to avoid publishing secrets or oversized logs. Diagnose failures separately with the reviewed command in a suitable local environment. Reports are local attestations and can be fabricated by anyone with write access. Protected CI should rerun the checks independently; never use a supplied report as release approval.

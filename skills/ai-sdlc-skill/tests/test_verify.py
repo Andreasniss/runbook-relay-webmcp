@@ -49,7 +49,7 @@ class VerificationTests(unittest.TestCase):
         self.assertEqual(report["checks"][0]["returncode"], 7)
 
     def test_missing_executable_fails(self):
-        self.prepare([{"name": "missing", "argv": ["/nonexistent-evidence-sdlc-fixture"]}])
+        self.prepare([{"name": "missing", "argv": ["/nonexistent-ai-sdlc-skill-fixture"]}])
         code, report = self.run_report()
         self.assertEqual(code, 1)
         self.assertEqual(report["checks"][0]["status"], "unavailable")
