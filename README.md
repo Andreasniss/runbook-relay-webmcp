@@ -1,6 +1,6 @@
 # Runbook Relay
 
-[Built by Andreas Nissen](https://github.com/Andreasniss) · [andreasnissen.dev](https://andreasnissen.dev) · [Connect on LinkedIn](https://www.linkedin.com/in/andreasnissen) · [Source on GitHub](https://github.com/Andreasniss/runbook-relay-webmcp) · [Apache-2.0](LICENSE)
+[Built by Andreas Nissen](https://github.com/Andreasniss) · [AndreasNissen.dev](https://andreasnissen.dev) · [Connect on LinkedIn](https://www.linkedin.com/in/andreasnissen) · [Source on GitHub](https://github.com/Andreasniss/runbook-relay-webmcp) · [Apache-2.0](LICENSE)
 
 Runbook Relay is a deterministic incident-response control room for testing governed human-agent collaboration. A browser agent can inspect an incident, compare bounded mitigations, stage an action, and request execution through [WebMCP](https://github.com/webmachinelearning/webmcp). A server-side control plane decides whether execution is allowed.
 
@@ -91,6 +91,8 @@ The [architecture note](docs/architecture.md) details data flow and transaction 
 Prerequisites: Node.js 22.13 or newer and npm.
 
 ```bash
+git clone https://github.com/Andreasniss/runbook-relay-webmcp.git
+cd runbook-relay-webmcp
 npm ci
 npx wrangler d1 migrations apply DB --local
 npm run dev
@@ -142,22 +144,49 @@ See [SECURITY.md](SECURITY.md) for responsible reporting guidance.
 - [OpenAI function calling guide](https://developers.openai.com/api/docs/guides/function-calling)
 - [Cloudflare D1 migrations](https://developers.cloudflare.com/d1/reference/migrations/)
 
-## License
+## FAQ
 
-[Apache-2.0](LICENSE). See [NOTICE](NOTICE) for copyright and [third-party notices](THIRD_PARTY_NOTICES.md) for exceptions and the earlier MIT grant.
+### Does the demo change a real production system?
 
-## Contributing safely
+No. Execution changes a synthetic incident fixture. The server checks approval and replay conditions, but the demo does not establish production identity, infrastructure authorization, or operational readiness.
 
-Read [the publication privacy boundary](PRIVACY.md) and install the local Git hooks before uploading changes. Private authoring stays outside public branches and PRs; intentional demo prompts and reviewed engineering evidence remain public.
+### Does a successful guided demo prove native WebMCP works?
 
-## Reusable delivery workflow
+No. The labeled simulator exercises the same application control plane. Native discovery requires a compatible browser environment and confirmation that all five tools registered. No external MCP bridge is bundled or claimed as tested.
 
-This repository pilots [AI SDLC Skill](skills/ai-sdlc-skill/SKILL.md), an independently written adaptation of selected [Anthropic AI-native SDLC guidance](https://claude.com/blog/the-ai-native-sdlc-playbook). The skill preserves existing instructions and separates planning, verification evidence, review, and release authority. See the [adoption guide](skills/ai-sdlc-skill/references/adoption.md) and [pilot record](docs/evidence-sdlc-pilot.md). This is an experimental delivery aid, not a security boundary or evidence of measured productivity gains.
+### Can an agent approve an action by saying “I approve” in chat?
 
-## Canonical delivery skill
+No. Approval must be recorded through the page for the staged action and current session. The tools cannot create approval. The server checks the action, version, lifetime, and consumption state, but cannot independently prove that a human rather than browser automation clicked the page control.
 
-The bundled [AI SDLC Skill](skills/ai-sdlc-skill/README.md) is pinned to the reviewed [standalone source](https://github.com/Andreasniss/ai-sdlc-skill/tree/811c549bf772cfac6ad285faf374ca32a7e820d1). The [source manifest](skills/ai-sdlc-skill.source.json) records the exact commit and each file digest. Updates require a reviewed PR; the repository never downloads skill updates automatically.
+### Are receipts the same as AI SDLC delivery artifacts?
 
-## Reuse and contributions
+No. Cloudflare D1 stores runtime sessions, approvals, executions, and receipts. Repository documents and pull requests record how the software was designed, checked, and reviewed. Both support inspection, with different boundaries: receipt hashes are not independently anchored, and committed delivery records are not proof that an assistant’s reasoning or every runtime action was correct.
 
-Copyright 2026 Andreas Nissen. Original project code and accompanying technical documentation are licensed under [Apache-2.0](LICENSE), except where separately indicated. See [NOTICE](NOTICE). Third-party dependencies and bundled material retain their own terms. Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, verification, and contribution expectations.
+### Should I use Plan mode when contributing with the delivery skill?
+
+Use Plan mode when scope or design needs review before implementation. An execution-enabled mode can handle clear, authorized changes while following the bundled skill and repository rules. Permissions and durable documentation are separate concerns: preserve useful decisions and verification evidence in the repository or pull request, and do not infer release authority from a mode or Markdown plan.
+
+## Related writing
+
+| Read | Why it matters here |
+| --- | --- |
+| [Runbook Relay case study](https://andreasnissen.dev/projects/runbook-relay/) | Guided proof path and evidence limits |
+| [Why Browser Agent Governance Belongs on the Server](https://andreasnissen.dev/writing/from-browser-tool-to-governed-workflow/) | Why every interaction path shares the server policy boundary |
+| [AGENTS.md and CLAUDE.md: Shared Rules, Different Entry Points](https://andreasnissen.dev/writing/agents-md-claude-md-shared-instructions/) | Repository guidance across assistants |
+| [What Evidence Should an AI-Generated Pull Request Carry?](https://andreasnissen.dev/writing/evidence-for-ai-generated-pull-requests/) | Reviewing changes to a governed workflow |
+
+For the development workflow, see the [AI-Assisted Software Delivery series](https://andreasnissen.dev/series/ai-assisted-software-delivery/).
+
+## Delivery workflow
+
+This repository uses [AI SDLC Skill](skills/ai-sdlc-skill/README.md), an independently written adaptation of selected [Anthropic AI-native SDLC guidance](https://claude.com/blog/the-ai-native-sdlc-playbook). It preserves repository instructions and separates planning, verification evidence, review, and release authority. It is an experimental delivery aid, not a security boundary or evidence of measured productivity gains. See the [adoption guide](skills/ai-sdlc-skill/references/adoption.md) and [pilot record](docs/evidence-sdlc-pilot.md).
+
+The bundled copy is pinned to the reviewed [standalone source](https://github.com/Andreasniss/ai-sdlc-skill/tree/811c549bf772cfac6ad285faf374ca32a7e820d1). The [source manifest](skills/ai-sdlc-skill.source.json) records the exact commit and each file digest. Updates require a reviewed PR; the repository never downloads skill updates automatically.
+
+## Contributing and reuse
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, verification, and contribution expectations, [SECURITY.md](SECURITY.md) for reporting guidance, and [PRIVACY.md](PRIVACY.md) before any public upload. Install the local hooks as documented there. Keep private authoring outside public branches and PRs; intentional demo prompts, synthetic fixtures, and reviewed engineering evidence remain public.
+
+Copyright 2026 Andreas Nissen. Original project code and accompanying technical documentation are licensed under [Apache-2.0](LICENSE), except where separately indicated. See [NOTICE](NOTICE). Third-party dependencies and bundled material retain their own terms. See [third-party notices](THIRD_PARTY_NOTICES.md) for exceptions and the earlier MIT grant.
+
+This independent personal project is not affiliated with or endorsed by any provider or employer. Third-party names and marks belong to their respective owners.
