@@ -171,6 +171,7 @@ Use Plan mode when scope or design needs review before implementation. An execut
 | Read | Why it matters here |
 | --- | --- |
 | [Runbook Relay case study](https://andreasnissen.dev/projects/runbook-relay/) | Guided proof path and evidence limits |
+| [When Agents Can Use Your Software, Which Interfaces Are Worth Building?](https://andreasnissen.dev/writing/mcp-cli-webmcp-computer-use/) | Compares computer use, CLI or API, MCP, and WebMCP against this incident workflow |
 | [Why Browser Agent Governance Belongs on the Server](https://andreasnissen.dev/writing/from-browser-tool-to-governed-workflow/) | Why every interaction path shares the server policy boundary |
 | [AGENTS.md and CLAUDE.md: Shared Rules, Different Entry Points](https://andreasnissen.dev/writing/agents-md-claude-md-shared-instructions/) | Repository guidance across assistants |
 | [What Evidence Should an AI-Generated Pull Request Carry?](https://andreasnissen.dev/writing/evidence-for-ai-generated-pull-requests/) | Reviewing changes to a governed workflow |
