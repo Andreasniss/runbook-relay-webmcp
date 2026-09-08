@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 2,
+  "evidenceType": "deterministic-production-control-plane-with-local-sqlite",
+  "generatedAt": "2026-09-08T05:33:20.446Z",
+  "checkoutAtRun": {
+    "commit": "fa53ad0d94c1cf777e3d3dd6565ce3498049652f",
+    "informationalOnly": true,
+    "note": "May be rewritten by squash merge; resolve source using sourceGitBlobs and sourceSha256."
+  },
+  "workingTreeDirty": false,
+  "sourceGitBlobs": {
+    "db/control-plane.ts": "622fbcf7e582270c110c0e5a5c7b2d3a426d4f83",
+    "lib/control-plane.mjs": "9d98ff120a0585b3ce2702616703fdedc7676bd5",
+    "evals/control-plane/run.mjs": "628f80b3876644fb06066c911a011bad79b91048",
+    "evals/control-plane/sqlite-d1.mjs": "9a0a94594d943ce43a1dc98a78ff496e2368e534",
+    "evals/control-plane/provenance.mjs": "1b4fba0b8ad12fc2a198106a8d0b1f07dce5c12f",
+    "evals/control-plane/verify-snapshot.mjs": "cb257a541b790e86b0bc222f330f1d1038699ca3",
+    "drizzle/0000_dizzy_karen_page.sql": "3e6f4f675b90608d07fc6a9cb16700d69eb586cd",
+    "drizzle/0001_optimize.sql": "31f6e56bf1c93fc22f8cdbde3f3a844352106543"
+  },
+  "sourceSha256": {
+    "db/control-plane.ts": "02a319f07fcc9eefa4fbc841ae90ee5635226279773352f4b4f956e4eb377481",
+    "lib/control-plane.mjs": "1cc112e42e2fef3461b5a07ac9abce19852c43e6f1c0caae2d5dc9bae1b8618b",
+    "evals/control-plane/run.mjs": "7f1de0a9edc5f0eff4c01689bf2d5c4200c4d4379ea9fe120b0dd94cac59d1d1",
+    "evals/control-plane/sqlite-d1.mjs": "f376b6a5144af89937c98726aa3bf2f0cddd0edcf3ef63f297d9c021a0b0cb53",
+    "evals/control-plane/provenance.mjs": "3f1d4384371e6eb6f7d02f7f2bd458e785ee081396c27b5de10d9b1c50231684",
+    "evals/control-plane/verify-snapshot.mjs": "b594539a8048257cc3354321751d0b8509620ca2b964fd626a8ad46d514dfb46",
+    "drizzle/0000_dizzy_karen_page.sql": "d1ee447a57616f44d348e2cc5e27779ddf8b4d8000ba3734a39bf8ab5fdcecd8",
+    "drizzle/0001_optimize.sql": "c1b0d0eaed77d73efc94856b3ceeebabaabcdb0cd9c29e2b2e7a3445d6234bc3"
+  },
+  "nodeVersion": "v22.13.0",
+  "passed": 11,
+  "total": 11,
+  "limitations": [
+    "No HTTP, cookie, origin, or native WebMCP integration exercised",
+    "Local SQLite adapter is not Cloudflare D1 deployment verification",
+    "No live model, external infrastructure, or independent recovery measurement",
+    "Response loss injected only after a completed local transaction; real downstream timeout/partial-commit behavior is untested",
+    "Approval is synthetic test setup; demo session identity is not authenticated human identity"
+  ],
+  "cases": [
+    {
+      "id": "C01",
+      "claim": "Execution without approval is blocked and recorded",
+      "passed": true,
+      "code": "approval_required",
+      "executionRows": 0,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C02",
+      "claim": "Changing a proposal invalidates the earlier approval",
+      "passed": true,
+      "code": "approval_required",
+      "oldApprovalCode": "stale_approval",
+      "executionRows": 0,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C03",
+      "claim": "A stale execution request cannot apply a changed proposal",
+      "passed": true,
+      "code": "stale_execution",
+      "executionRows": 0,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C04",
+      "claim": "An approval is invalid at its exact expiry",
+      "passed": true,
+      "code": "approval_expired",
+      "executionRows": 0,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C05",
+      "claim": "A separate session cannot reuse another session's approved request",
+      "passed": true,
+      "code": "stale_execution",
+      "executionRows": 0,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C06",
+      "claim": "Exact approval permits one execution and consumes approval",
+      "passed": true,
+      "executed": true,
+      "approvalConsumed": true,
+      "syntheticServiceRecovered": true,
+      "executionRows": 1,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C07",
+      "claim": "Conflicting reuse of an execution key is blocked",
+      "passed": true,
+      "code": "idempotency_conflict",
+      "executionRows": 1,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C08",
+      "claim": "A lost response can be reconciled and replayed without another execution",
+      "passed": true,
+      "responseLoss": "after commit",
+      "replayed": true,
+      "resourceVersionUnchanged": true,
+      "executionRows": 1,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C09",
+      "claim": "Partial failure remains recovery-required when replayed",
+      "passed": true,
+      "executed": false,
+      "recoveryRequired": true,
+      "replayed": true,
+      "executionRows": 1,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C10",
+      "claim": "Accepted execution does not imply service recovery",
+      "passed": true,
+      "executed": true,
+      "syntheticServiceRecovered": false,
+      "status": "monitoring",
+      "executionRows": 1,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C11",
+      "claim": "Concurrent identical requests produce one stored execution",
+      "passed": true,
+      "concurrentRequests": 2,
+      "replayObserved": true,
+      "executionRows": 1,
+      "receiptChainVerified": true
+    }
+  ]
+}

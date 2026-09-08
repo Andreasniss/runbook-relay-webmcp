@@ -19,7 +19,8 @@
     "eval:labels": "node evals/live-tool-use/generate-label-template.mjs",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "typecheck": "tsc --noEmit",
-    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
+    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate",
+    "eval:control-plane": "node --experimental-transform-types evals/control-plane/run.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -70,5 +71,10 @@
   },
   "type": "module",
   "displayName": "Runbook Relay",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "0.25.12"
+    }
+  }
 }
