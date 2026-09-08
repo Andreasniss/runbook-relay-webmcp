@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "evidenceType": "deterministic-production-control-plane-with-local-sqlite",
-  "generatedAt": "2026-09-08T05:07:00.879Z",
-  "sourceCommit": "5b19fe4d14c79dc3ce82cd4a9bae43cd67e813c2",
+  "generatedAt": "2026-09-08T05:11:43.191Z",
+  "sourceCommit": "df3b3f26f8c7194b5953821fb64a07be85f875ae",
   "workingTreeDirty": false,
   "nodeVersion": "v24.19.0",
   "sourceSha256": {
