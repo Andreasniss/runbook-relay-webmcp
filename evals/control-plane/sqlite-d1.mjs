@@ -18,12 +18,12 @@ export function createLocalD1() {
         return row ? (column ? row[column] : row) : null;
       },
       execute() {
-        const statement = sqlite.prepare(sql);
-        if (statement.columns().length) {
-          return { success: true, results: statement.all(...values), meta: { changes: 0 } };
-        }
-        const result = statement.run(...values);
-        return { success: true, results: [], meta: { changes: Number(result.changes) } };
+        // all() also executes non-returning statements on Node 22.13. Avoid
+        // StatementSync.columns(), which was added after our supported baseline.
+        const before = sqlite.prepare("SELECT total_changes() AS total").get().total;
+        const results = sqlite.prepare(sql).all(...values);
+        const after = sqlite.prepare("SELECT total_changes() AS total").get().total;
+        return { success: true, results, meta: { changes: Number(after - before) } };
       },
       async run() { return this.execute(); },
     };

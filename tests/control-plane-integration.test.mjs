@@ -13,7 +13,7 @@ test("production control-plane SQL passes all deterministic execution scenarios"
   assert.equal(report.evidenceType, "deterministic-production-control-plane-with-local-sqlite");
 });
 
-test("local D1 adapter rolls back an entire batch after a SQL error", async () => {
+test("local D1 adapter preserves SQL results, change counts and batch rollback", async () => {
   const db = createLocalD1();
   try {
     await db.prepare("CREATE TABLE rollback_probe (id INTEGER PRIMARY KEY)").run();
@@ -22,7 +22,19 @@ test("local D1 adapter rolls back an entire batch after a SQL error", async () =
       db.prepare("INSERT INTO rollback_probe VALUES (1)"),
     ]));
     assert.equal(await db.prepare("SELECT COUNT(*) AS total FROM rollback_probe").first("total"), 0);
-    await db.batch([db.prepare("INSERT INTO rollback_probe VALUES (2)")]);
-    assert.equal(await db.prepare("SELECT id FROM rollback_probe").first("id"), 2);
+    const [inserted, selected, ignored, updated] = await db.batch([
+      db.prepare("INSERT INTO rollback_probe VALUES (2)"),
+      db.prepare("SELECT id FROM rollback_probe"),
+      db.prepare("INSERT OR IGNORE INTO rollback_probe VALUES (2)"),
+      db.prepare("UPDATE rollback_probe SET id = 3 WHERE id = 2 RETURNING id"),
+    ]);
+    assert.deepEqual(inserted.results, []);
+    assert.equal(inserted.meta.changes, 1);
+    assert.equal(selected.results[0].id, 2);
+    assert.equal(selected.meta.changes, 0);
+    assert.equal(ignored.meta.changes, 0);
+    assert.equal(updated.meta.changes, 1);
+    assert.equal(updated.results[0].id, 3);
+    assert.equal(await db.prepare("SELECT id FROM rollback_probe").first("id"), 3);
   } finally { db.close(); }
 });

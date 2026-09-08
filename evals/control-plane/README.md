@@ -3,7 +3,7 @@
 Run the production execution policy and SQL against a fresh, transactional local SQLite database. Each scenario starts with the real migrations and calls `db/control-plane.ts`; this suite does not reproduce its approval rules in a second fixture.
 
 ```bash
-# Node 22.16+ or Node 24; no npm install, credentials, server or network needed
+# Node 22.13+; no npm install, credentials, server or network needed
 node --experimental-transform-types evals/control-plane/run.mjs
 # After npm setup, equivalent command with an optional machine-readable report
 npm run eval:control-plane -- --output outputs/control-plane.json
@@ -37,7 +37,7 @@ The verifier includes every SQL migration loaded by the adapter, detects migrati
 | C10 | Action applied: synthetic health still outside target, monitoring continues |
 | C11 | Concurrent identical calls: one execution row, a replay receipt |
 
-Every case also verifies the resulting receipt contents and chain. The local adapter's rollback behavior has a separate test. Run both through `node --test tests/control-plane-integration.test.mjs`; they also run in the normal `npm test` gate.
+Every case also verifies the resulting receipt contents and chain. The local adapter has a separate test for returned rows, mutation counts, ignored inserts, and transactional rollback. Run both through `node --test tests/control-plane-integration.test.mjs`; they also run in the normal `npm test` gate.
 
 ## What this adds
 
