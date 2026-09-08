@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "evidenceType": "deterministic-production-control-plane-with-local-sqlite",
+  "generatedAt": "2026-09-08T05:07:00.879Z",
+  "sourceCommit": "5b19fe4d14c79dc3ce82cd4a9bae43cd67e813c2",
+  "workingTreeDirty": false,
+  "nodeVersion": "v24.19.0",
+  "sourceSha256": {
+    "db/control-plane.ts": "02a319f07fcc9eefa4fbc841ae90ee5635226279773352f4b4f956e4eb377481",
+    "lib/control-plane.mjs": "1cc112e42e2fef3461b5a07ac9abce19852c43e6f1c0caae2d5dc9bae1b8618b",
+    "drizzle/0000_dizzy_karen_page.sql": "d1ee447a57616f44d348e2cc5e27779ddf8b4d8000ba3734a39bf8ab5fdcecd8",
+    "drizzle/0001_optimize.sql": "c1b0d0eaed77d73efc94856b3ceeebabaabcdb0cd9c29e2b2e7a3445d6234bc3",
+    "evals/control-plane/run.mjs": "b0103ac4f228c88f3b22b02508e93b013ab59bd877609698b37c3a3ffaf59c67",
+    "evals/control-plane/sqlite-d1.mjs": "afedf5db0566181b2d9b07d42603daae688c2af80e1fb4bcd07fa9d6229d71f9"
+  },
+  "passed": 11,
+  "total": 11,
+  "limitations": [
+    "No HTTP, cookie, origin, or native WebMCP integration exercised",
+    "Local SQLite adapter is not Cloudflare D1 deployment verification",
+    "No live model, external infrastructure, or independent recovery measurement",
+    "Response loss injected only after a completed local transaction; real downstream timeout/partial-commit behavior is untested",
+    "Approval is synthetic test setup; demo session identity is not authenticated human identity"
+  ],
+  "cases": [
+    {
+      "id": "C01",
+      "claim": "Execution without approval is blocked and recorded",
+      "passed": true,
+      "code": "approval_required",
+      "executionRows": 0,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C02",
+      "claim": "Changing a proposal invalidates the earlier approval",
+      "passed": true,
+      "code": "approval_required",
+      "oldApprovalCode": "stale_approval",
+      "executionRows": 0,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C03",
+      "claim": "A stale execution request cannot apply a changed proposal",
+      "passed": true,
+      "code": "stale_execution",
+      "executionRows": 0,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C04",
+      "claim": "An approval is invalid at its exact expiry",
+      "passed": true,
+      "code": "approval_expired",
+      "executionRows": 0,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C05",
+      "claim": "A separate session cannot reuse another session's approved request",
+      "passed": true,
+      "code": "stale_execution",
+      "executionRows": 0,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C06",
+      "claim": "Exact approval permits one execution and consumes approval",
+      "passed": true,
+      "executed": true,
+      "approvalConsumed": true,
+      "syntheticServiceRecovered": true,
+      "executionRows": 1,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C07",
+      "claim": "Conflicting reuse of an execution key is blocked",
+      "passed": true,
+      "code": "idempotency_conflict",
+      "executionRows": 1,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C08",
+      "claim": "A lost response can be reconciled and replayed without another execution",
+      "passed": true,
+      "responseLoss": "after commit",
+      "replayed": true,
+      "resourceVersionUnchanged": true,
+      "executionRows": 1,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C09",
+      "claim": "Partial failure remains recovery-required when replayed",
+      "passed": true,
+      "executed": false,
+      "recoveryRequired": true,
+      "replayed": true,
+      "executionRows": 1,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C10",
+      "claim": "Accepted execution does not imply service recovery",
+      "passed": true,
+      "executed": true,
+      "syntheticServiceRecovered": false,
+      "status": "monitoring",
+      "executionRows": 1,
+      "receiptChainVerified": true
+    },
+    {
+      "id": "C11",
+      "claim": "Concurrent identical requests produce one stored execution",
+      "passed": true,
+      "concurrentRequests": 2,
+      "replayObserved": true,
+      "executionRows": 1,
+      "receiptChainVerified": true
+    }
+  ]
+}

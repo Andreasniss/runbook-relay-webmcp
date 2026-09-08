@@ -6,6 +6,8 @@ This harness measures how a pinned OpenAI model uses Runbook Relay's five tools 
 
 The case suite, deterministic fixture, schemas, and automatic graders are repository evidence. No live-model result exists until the runner completes with an explicitly supplied API key and pinned model. Automatic grades measure tool traces and server-policy outcomes; a human must label response quality and verify representative failures before any result is published.
 
+The model runner uses a separate synthetic policy fixture; it does not call the production endpoint or database functions. Use the [production control-plane evidence runner](../control-plane/README.md) to verify the actual database policy and SQL without an API key. Neither suite establishes deployed HTTP authentication or real infrastructure recovery.
+
 ## Validate without an API key
 
 ```bash

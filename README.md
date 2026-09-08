@@ -6,11 +6,13 @@ Runbook Relay is a deterministic incident-response control room for testing gove
 
 [![CI](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml)
 
-**[Open the canonical live demo](https://runbook-relay.andreasnissen.dev)** · [Portfolio case study](https://andreasnissen.dev/projects/runbook-relay/) · [Architecture article](https://andreasnissen.dev/writing/from-browser-tool-to-governed-workflow/) · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md) · [50-task evaluation](evals/live-tool-use/README.md) · [Hosting runbook](docs/hosting.md)
+**[Open the canonical live demo](https://runbook-relay.andreasnissen.dev)** · [Portfolio case study](https://andreasnissen.dev/projects/runbook-relay/) · [Architecture article](https://andreasnissen.dev/writing/from-browser-tool-to-governed-workflow/) · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md) · [Execution evidence](evals/control-plane/README.md) · [50-task evaluation](evals/live-tool-use/README.md) · [Hosting runbook](docs/hosting.md)
 
 **Live deployment evidence, verified 4 September 2026:** the Cloudflare Worker resolves on the canonical domain with valid TLS and HTTP 200. Production build, lint, TypeScript, all 30 automated tests, the 50-case evaluation contract, and the structural agent-interface budget pass. Browser verification covered the blocked-before-approval path, page approval, successful synthetic execution, reset, durable receipts, and the decision log. The test browser did not expose native WebMCP, so native discovery is not claimed. The scenario and external action are synthetic; no production system is connected.
 
 > This independent portfolio project was inspired by OpenAI's [WebMCP Challenge](https://openai.com/webmcp-challenge/). It is not a challenge submission and is not affiliated with or endorsed by OpenAI.
+
+**Local execution evidence, verified 8 September 2026:** [11 deterministic scenarios](evals/control-plane/README.md) execute the production control-plane functions and SQL against transactional local SQLite. They cover approval and version boundaries, response-loss reconciliation, replay, concurrent requests, and execution versus recovery. This is separate from the earlier deployment verification and from live-model evaluation. [Machine-readable snapshot](evals/control-plane/verification.json).
 
 ## Start here
 
@@ -106,11 +108,14 @@ The D1 binding is declared without a committed database ID. The Cloudflare workf
 npm run lint
 npm run typecheck
 npm run eval:validate
+npm run eval:control-plane
 npm test
 npm run measure:agent
 ```
 
-`npm test` performs a production build, renders the Worker, and runs 30 contract, control-plane, deployment-bootstrap, evaluation, and interface-budget tests. `npm run eval:validate` verifies exactly 50 categorized cases, 18 adversarial cases, and strict bounded tool schemas. `npm run measure:agent` is a tokenizer-independent structural regression guard, not a live-model benchmark.
+`npm test` performs a production build, renders the Worker, and runs 33 contract, control-plane, deployment-bootstrap, evaluation, dependency-compatibility, and interface-budget tests, including the 11-scenario production-SQL runner and its transaction rollback check. `npm run eval:validate` verifies exactly 50 categorized cases, 18 adversarial cases, and strict bounded tool schemas. `npm run measure:agent` is a tokenizer-independent structural regression guard, not a live-model benchmark.
+
+The [dependency remediation note](docs/dependency-security.md) explains the scoped legacy-loader override and its compatibility check.
 
 ## Deployment
 
