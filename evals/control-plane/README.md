@@ -9,7 +9,17 @@ node --experimental-transform-types evals/control-plane/run.mjs
 npm run eval:control-plane -- --output outputs/control-plane.json
 ```
 
-Create the output directory first if it does not exist. JSON goes to stdout by default; a failed assertion produces a nonzero exit. The report identifies the source commit, dirty-tree status, exact source hashes, runtime, case results and limitations. For a committed candidate, run from a clean working tree and save output outside the repository or under an ignored output directory. The checked-in [verification snapshot](verification.json) identifies its exact evaluated source hashes; use a fresh run to verify a changed revision.
+Create the output directory first if it does not exist. JSON goes to stdout by default; a failed assertion produces a nonzero exit. The report identifies the exact source Git blobs and SHA-256 hashes, dirty-tree status, runtime, case results and limitations. `checkoutAtRun.commit` is informational: squash merges can rewrite it, so it is not a durable source reference. For a committed candidate, run from a clean working tree and save output outside the repository or under an ignored output directory. The checked-in [verification snapshot](verification.json) identifies its exact evaluated source hashes; use a fresh run to verify a changed revision.
+
+## Verify after a squash merge
+
+```bash
+node evals/control-plane/verify-snapshot.mjs
+# Or resolve the source from a retained historical commit
+node evals/control-plane/verify-snapshot.mjs <retained-commit>
+```
+
+The verifier includes every SQL migration loaded by the adapter, detects migration-set changes, and reads each required source file from the selected commit and compares both its Git blob ID and SHA-256 with the snapshot. These blobs remain reachable from the merged tree even when the original PR commit disappears. It never needs `checkoutAtRun.commit`, and fails for changed or incomplete source sets. The snapshot excludes itself from its source set to avoid a self-referential hash. A match establishes source identity; re-running the scenarios still provides the behavior check.
 
 ## Claim to check
 

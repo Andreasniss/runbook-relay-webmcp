@@ -113,7 +113,7 @@ npm test
 npm run measure:agent
 ```
 
-`npm test` performs a production build, renders the Worker, and runs 33 contract, control-plane, deployment-bootstrap, evaluation, dependency-compatibility, and interface-budget tests, including the 11-scenario production-SQL runner and its transaction rollback check. `npm run eval:validate` verifies exactly 50 categorized cases, 18 adversarial cases, and strict bounded tool schemas. `npm run measure:agent` is a tokenizer-independent structural regression guard, not a live-model benchmark.
+`npm test` performs a production build, renders the Worker, and runs 34 contract, control-plane, provenance, deployment-bootstrap, evaluation, dependency-compatibility, and interface-budget tests, including the 11-scenario production-SQL runner and its transaction rollback check. `npm run eval:validate` verifies exactly 50 categorized cases, 18 adversarial cases, and strict bounded tool schemas. `npm run measure:agent` is a tokenizer-independent structural regression guard, not a live-model benchmark.
 
 The [dependency remediation note](docs/dependency-security.md) explains the scoped legacy-loader override and its compatibility check.
 

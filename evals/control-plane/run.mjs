@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createLocalD1 } from "./sqlite-d1.mjs";
+import { collectProvenance } from "./provenance.mjs";
 import {
   approveMitigation, executeMitigation, getControlPlaneSnapshot, stageMitigation,
 } from "../../db/control-plane.ts";
@@ -153,17 +152,12 @@ await scenario("C11", "Concurrent identical requests produce one stored executio
   return { concurrentRequests: 2, replayObserved: true };
 });
 
-const sourceFiles = ["db/control-plane.ts", "lib/control-plane.mjs", "drizzle/0000_dizzy_karen_page.sql", "drizzle/0001_optimize.sql", "evals/control-plane/run.mjs", "evals/control-plane/sqlite-d1.mjs"];
-const sourceSha256 = Object.fromEntries(sourceFiles.map((path) => [path, createHash("sha256").update(readFileSync(new URL(`../../${path}`, import.meta.url))).digest("hex")]));
-const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
 const report = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   evidenceType: "deterministic-production-control-plane-with-local-sqlite",
   generatedAt: new Date().toISOString(),
-  sourceCommit: git("rev-parse", "HEAD"),
-  workingTreeDirty: git("status", "--porcelain").length > 0,
+  ...collectProvenance(root),
   nodeVersion: process.version,
-  sourceSha256,
   passed: cases.filter((item) => item.passed).length,
   total: cases.length,
   limitations: ["No HTTP, cookie, origin, or native WebMCP integration exercised", "Local SQLite adapter is not Cloudflare D1 deployment verification", "No live model, external infrastructure, or independent recovery measurement", "Response loss injected only after a completed local transaction; real downstream timeout/partial-commit behavior is untested", "Approval is synthetic test setup; demo session identity is not authenticated human identity"],
