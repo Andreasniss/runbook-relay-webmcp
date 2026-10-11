@@ -1,6 +1,6 @@
 # Common cases and example prompts
 
-Install and select the skill using your [host's supported route](https://github.com/Andreasniss/ai-sdlc-skill/blob/main/INSTALLATION.md), then give it a task in ordinary language. These examples describe intended behavior, not completed runtime evaluations. Replace the sample requirements with your own. The agent should apply existing authorization and ask only about material gaps that prevent responsible progress.
+Install and select the skill using your [host's supported route](https://github.com/Andreasniss/ai-sdlc-skill/blob/main/INSTALLATION.md), then give it a task in ordinary language. These examples describe intended behavior, not completed runtime evaluations. The same expectations are restated as checkable pass criteria in [evals/cases.md](../evals/cases.md); run those after changing the instructions, as [evaluation.md](evaluation.md) describes. Replace the sample requirements with your own. The agent should apply existing authorization and ask only about material gaps that prevent responsible progress.
 
 ## New project in an empty directory
 
@@ -63,3 +63,23 @@ Expect the agent to pick up the current stage rather than restart planning. Olde
 > Use the attached AI SDLC Skill instructions to review this proposed design and diff against the attached requirements. Identify gaps and suggest verification steps. You do not have the repository or a terminal, so distinguish what the supplied material supports from what still needs execution.
 
 Expect a bounded document review, with no claims about unseen files, executed tests, or an installed skill. Attach the relevant skill files when the host cannot load them itself.
+
+## Feedback gaps and stalled work
+
+Before changing a browser interaction, identify both the logic check and the user path. A Node test may verify task filtering while leaving click wiring, rendering, and reload behavior unobserved. Run the available checks and state that boundary; do not call a mocked DOM an observed browser session.
+
+If an integration check repeatedly reports an unavailable service, rereading the failure or changing application code without a new hypothesis adds no evidence. Inspect the check and its prerequisites, run useful independent local checks, then report the missing service and the smallest authorized next action. Do not suppress the required check, change its expected result, or acquire access through another account.
+
+For a change that passes its direct checks, inspect the interactions it could disturb. Sorting the displayed task list can be correct while accidentally changing the saved order or CSV export. Check the existing contract before changing either. If hands-on use suggests a different ordering rule, that is a product decision to propose, not a test failure to redefine.
+
+Routine implementation can continue without repeated product approvals. Escalate when the intended behavior, architecture, scope, or acceptable risk needs a consequential new decision. A review request still ends with findings even if the skill describes later lifecycle stages.
+
+## Review rounds that keep growing
+
+> Use AI SDLC Skill to address the current CSV export review. Earlier rounds repaired individual symptoms; this round contains related failures, an unsupported report, and a suggestion to change the ordering contract. Inspect the reports against the current code and requirements, make the necessary repair, and prepare the changed revision for review.
+
+Expect findings to be assessed together before another repair batch. Failures in sibling paths can share one cause; reproduce the relevant acceptance failures and check the shared repair. Explain dismissals and record a durable owner for valid nonblocking work. Do not treat an optional product suggestion as an accepted requirement or build a general validation system to resolve a bounded defect. If rounds keep growing, reconsider the scope or approach even when every round produces new evidence. Continue authorized repairs without asking for the same permission again.
+
+> Review the repaired revision and its affected interactions. The preceding review covered the rest of the change. Report any remaining blocker and which checks establish the current result.
+
+Expect focused review of the repair and the behavior it can disturb, with wider review when the evidence or repository rules justify it. Reusing earlier review context does not make earlier test results current. A newly introduced acceptance failure still blocks release, regardless of how many repair rounds have already happened. Keep unsupported reports, valid nonblocking follow-ups, and release blockers distinct.
