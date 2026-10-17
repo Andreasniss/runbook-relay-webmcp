@@ -61,7 +61,7 @@ Bootstrap checklist:
 3. Add the two protected environment secrets.
 4. Run the manual workflow from the reviewed `main` commit.
 5. Confirm the ephemeral binding-resolution, migration, and deployment logs reference that exact commit without printing resource identifiers.
-6. Verify DNS, TLS, security headers, assets, API responses, D1 persistence, approval expiry, blocked execution, replay, reset, and native WebMCP discovery.
+6. Verify DNS, TLS, security headers, assets, API responses, D1 persistence, approval expiry, blocked execution, replay and reset. Check native WebMCP availability; verify discovery when the browser exposes `document.modelContext`, otherwise apply the disclosed fallback below.
 7. Change public links to the owned URL only after the applicable hosting and
    control-plane checks pass. If the browser lacks `document.modelContext`, verify
    the native-unavailable state and labeled simulator separately and disclose that
