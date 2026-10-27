@@ -1,98 +1,37 @@
 # Runbook Relay
 
-[Built by Andreas Nissen](https://github.com/Andreasniss) · [AndreasNissen.dev](https://andreasnissen.dev) · [Connect on LinkedIn](https://www.linkedin.com/in/andreasnissen) · [Source on GitHub](https://github.com/Andreasniss/runbook-relay-webmcp) · [Apache-2.0](LICENSE)
+A demo incident-response app where an agent can propose a mitigation, but the server checks approval before executing it.
 
-Runbook Relay is a deterministic incident-response control room for testing governed human-agent collaboration. A browser agent can inspect an incident, compare bounded mitigations, stage an action, and request execution through [WebMCP](https://github.com/webmachinelearning/webmcp). A server-side control plane decides whether execution is allowed.
+**[Try the live demo](https://runbook-relay.andreasnissen.dev)**
 
-[![CI](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Andreasniss/runbook-relay-webmcp/actions/workflows/ci.yml)
+The incident and action are synthetic. No production system is connected.
 
-**[Open the canonical live demo](https://runbook-relay.andreasnissen.dev)** · [Portfolio case study](https://andreasnissen.dev/projects/runbook-relay/) · [Architecture article](https://andreasnissen.dev/writing/from-browser-tool-to-governed-workflow/) · [Architecture](docs/architecture.md) · [Threat model](docs/threat-model.md) · [Execution evidence](evals/control-plane/README.md) · [50-task evaluation](evals/live-tool-use/README.md) · [Hosting runbook](docs/hosting.md)
+## Try it without setup
 
-**Live deployment evidence, verified 4 September 2026:** the Cloudflare Worker resolves on the canonical domain with valid TLS and HTTP 200. Production build, lint, TypeScript, all 30 automated tests, the 50-case evaluation contract, and the structural agent-interface budget pass. Browser verification covered the blocked-before-approval path, page approval, successful synthetic execution, reset, durable receipts, and the decision log. The test browser did not expose native WebMCP, so native discovery is not claimed. The scenario and external action are synthetic; no production system is connected.
+1. Open the demo and select **Start guided demo**.
+2. Inspect the blocked attempt before approval.
+3. Review the staged mitigation, select **Approve staged change**, then **Execute approved change**.
+4. Inspect the decision log and saved receipt.
 
-> This independent portfolio project was inspired by OpenAI's [WebMCP Challenge](https://openai.com/webmcp-challenge/). It is not a challenge submission and is not affiliated with or endorsed by OpenAI.
+Expected result: execution is blocked without matching approval. Repeating the same request returns its stored result without applying the action twice.
 
-**Local execution evidence, verified 8 September 2026:** [11 deterministic scenarios](evals/control-plane/README.md) execute the production control-plane functions and SQL against transactional local SQLite. They cover approval and version boundaries, response-loss reconciliation, replay, concurrent requests, and execution versus recovery. This is separate from the earlier deployment verification and from live-model evaluation. [Machine-readable snapshot](evals/control-plane/verification.json).
+The built-in simulator exercises the server policy. It does **not** prove native browser-agent discovery. For that path, expand **Test with your own AI agent** and confirm that all five native tools register. See [browser paths and compatibility](GUIDE.md#browser-paths).
 
-## Start here
+## What to inspect
 
-- **No setup:** open the live demo and select **Start guided demo**. The proposed change and approval controls appear together at the top of the page. The built-in simulator calls the same server control plane as the page tools and stops at the page-approval boundary.
-- **OpenAI native path:** use the latest ChatGPT desktop app with the built-in Browser and Site tools enabled. The page confirms when all five native tools are registered.
-- **Claude, Cursor, and other MCP clients:** these require a separate page-to-MCP transport such as an MCP-B extension or local relay. That compatibility path is not bundled or claimed as tested in this repository.
+- **Server policy:** page controls and agent tools use the same API.
+- **Bound approval:** the server checks the session, action, version, expiry and prior use.
+- **Saved receipts:** Cloudflare D1 retains decisions and execution results.
 
-The simulator proves application policy and durable state without an account or extension. It does not prove native browser tool discovery.
+No tool can create approval. Saying “I approve” in chat does not change application state. The server cannot independently prove that a human, rather than automation, clicked the page control.
 
-### Copy a starting prompt
-
-Expand **Test with your own AI agent** on the [live demo](https://runbook-relay.andreasnissen.dev/#native-testing). The first section provides copy-ready prompts with the canonical URL for **ChatGPT desktop**, **Claude Code or another browser agent**, and a follow-up to send **after you approve in the page**. Prompts are also selectable for manual copying.
-
-The ChatGPT prompt checks for native tools and labels any simulator fallback. The Claude Code prompt requires already-connected browser control and tests the visible simulator UI; it does not establish native WebMCP or MCP-B compatibility. Both stop for your own approval click in the same browser session. No prompt installs a bridge or grants approval on your behalf.
-
-The WebMCP status in the header links to this guidance. When native tools are unavailable or registration fails, an explanation near the top offers both the guided simulator and browser setup. Opening either setup link expands the guide automatically.
-
-## What this version proves
-
-| Control | Inspectable implementation |
-|---|---|
-| Server authority | Tool handlers and page controls call one same-origin API; React state is not the policy boundary |
-| Durable state | Cloudflare D1 stores sessions, approvals, executions, and append-only receipts |
-| Bound approval | Approval records include the server-issued session identity, immutable action digest, and resource version |
-| Short lifetime | Approval expires after five minutes and is consumed by the first matching execution |
-| Replay safety | A deterministic idempotency key returns the prior result for the same action and rejects conflicting reuse |
-| Concurrency safety | Compare-and-swap updates bind receipts and mutations to the state version and receipt-chain head |
-| Audit integrity | Receipt contents and links are SHA-256 verified for the latest returned chain segment |
-| Failure behavior | Deterministic tests cover missing, mismatched, expired, consumed, stale, replayed, and partial-failure states |
-| Model evaluation | A versioned 50-task harness captures traces, latency, tokens, estimated cost, request IDs, automatic grades, and human labels |
-
-The live-model runner is intentionally not presented as empirical evidence yet. It requires an explicitly supplied API key and pinned model; no credential or result is bundled in this repository.
-
-## Review it in three minutes
-
-1. Open the demo on desktop and inspect the **Server control active** status.
-2. Click **Start guided demo**. For native WebMCP, expand **Test with your own AI agent**; its labeled copy buttons copy prompts to paste into your agent chat.
-3. Verify that pre-approval execution creates a durable blocked receipt.
-4. Stage a mitigation, approve it in the page, execute once, and inspect the action digest, resource version, idempotency key, and receipt hash.
-5. Read the [architecture](docs/architecture.md), [threat model](docs/threat-model.md), and [tests](tests/).
-
-## Tool surface
-
-| Tool | Effect | Server policy |
-|---|---|---|
-| `get_incident_snapshot` | Reads incident, telemetry, staged action, approval, and version | Read-only; receipt recorded |
-| `compare_mitigations` | Returns three deterministic projections | Read-only; bounded catalog |
-| `stage_mitigation` | Binds one catalog action to a new version and digest | Never approves or executes |
-| `execute_approved_mitigation` | Requests the synthetic external action | Identity, digest, version, expiry, consumption, and idempotency checked |
-| `reset_incident_simulation` | Returns to the initial fixture state | Prior receipts remain append-only |
-
-No tool can create an approval. The approval UI sends the current action digest and resource version to the same server control plane. A chat instruction such as “I approve” has no effect on control state.
-
-## Runtime design
-
-The page registers five tools through `document.modelContext.registerTool()`. Native WebMCP calls, the labeled simulator, and human page controls all use `/api/control-plane`; Cloudflare D1 is the shared system of record. The server issues a random 256-bit `HttpOnly`, `SameSite=Strict` session cookie and stores only its SHA-256-derived key.
-
-The execution guard checks:
-
-1. a catalog action is staged;
-2. the requested action digest, resource version, and idempotency key match current state;
-3. a matching approval belongs to the same session identity;
-4. that approval is unused and unexpired; and
-5. no conflicting execution already owns the idempotency key.
-
-Successful execution consumes the approval and stores the synthetic result. Repeating the exact request returns that stored result without applying the action twice.
-
-The [architecture note](docs/architecture.md) details data flow and transaction guards. The [threat model](docs/threat-model.md) distinguishes demonstrated controls from the authenticated identity, independently anchored audit, and real infrastructure controls a production system would still need.
-
-## Browser paths
-
-- **Native path:** use a supported ChatGPT desktop Browser or a compatible Chrome WebMCP developer build. Confirm **Native WebMCP active · 5 tools registered** before treating discovery as verified.
-- **Fallback path:** the built-in simulator calls the same server API and is clearly labeled. It proves the application control path, not native browser tool discovery.
-- **Compatibility bridge:** no MCP-B polyfill, extension relay, or external MCP transport is bundled. A future bridge result must be labeled separately from native WebMCP.
+Read the [architecture](docs/architecture.md), [threat model](docs/threat-model.md) or [case study](https://andreasnissen.dev/projects/runbook-relay/).
 
 ## Local development
 
-Prerequisites: Node.js 22.13 or newer and npm.
+Use Git, Node.js 22.13 or newer, and npm:
 
-```bash
+```sh
 git clone https://github.com/Andreasniss/runbook-relay-webmcp.git
 cd runbook-relay-webmcp
 npm ci
@@ -100,99 +39,21 @@ npx wrangler d1 migrations apply DB --local
 npm run dev
 ```
 
-The D1 binding is declared without a committed database ID. The Cloudflare workflow resolves the pre-created production database into ephemeral runner configuration, while local development uses Wrangler's local D1 store. Migration `drizzle/0000_dizzy_karen_page.sql` creates the four durable tables and indexes.
+The migration creates the local D1 tables. Open the development URL printed by the server. Production hosting uses a separate existing database; see the [hosting runbook](docs/hosting.md).
 
-## Quality gates
+## Evidence and limits
 
-```bash
-npm run lint
-npm run typecheck
-npm run eval:validate
-npm run eval:control-plane
-npm test
-npm run measure:agent
-```
+- [Control-plane tests](evals/control-plane/README.md) exercise production policy functions against local SQLite.
+- [The 50-task evaluation contract](evals/live-tool-use/README.md) defines live-model evaluation. It is not a completed model benchmark; no success-rate, latency or cost result is claimed.
+- Receipt hashes detect modification within a returned segment. They are not independently signed or anchored.
+- Sessions are anonymous capabilities, not authenticated employee identities.
 
-`npm test` performs a production build, renders the Worker, and runs 34 contract, control-plane, provenance, deployment-bootstrap, evaluation, dependency-compatibility, and interface-budget tests, including the 11-scenario production-SQL runner and its transaction rollback check. `npm run eval:validate` verifies exactly 50 categorized cases, 18 adversarial cases, and strict bounded tool schemas. `npm run measure:agent` is a tokenizer-independent structural regression guard, not a live-model benchmark.
+The [technical guide](GUIDE.md) preserves runtime details, tool definitions, verification commands and evidence boundaries. This is a reference app, not a production operations console.
 
-The [dependency remediation note](docs/dependency-security.md) explains the scoped legacy-loader override and its compatibility check.
+## Contribute and reuse
 
-## Deployment
+Follow [CONTRIBUTING.md](CONTRIBUTING.md) for setup and checks, [SECURITY.md](SECURITY.md) for reporting, and [PRIVACY.md](PRIVACY.md) before public uploads.
 
-The canonical deployment is live on Cloudflare Workers at [runbook-relay.andreasnissen.dev](https://runbook-relay.andreasnissen.dev). The protected GitHub Actions workflow resolves the existing D1 binding without printing or committing its identifier, applies remote migrations, and then deploys the Worker and custom domain. The previous [ChatGPT Sites deployment](https://runbook-relay-webmcp.andreas-nissen.chatgpt.site) is retained only as a temporary rollback path; see [docs/hosting.md](docs/hosting.md).
+Built by [Andreas Nissen](https://andreasnissen.dev), with Codex assistance. Andreas owns requirements, architecture, evaluation, risk and release decisions. Inspired by OpenAI's [WebMCP Challenge](https://openai.com/webmcp-challenge/); not a submission or a provider or employer endorsement.
 
-## Evidence boundaries
-
-This is a reference application, not a production operations console.
-
-- The “external action” changes only a synthetic incident fixture.
-- The server-issued session is an anonymous scoped capability, not an authenticated employee identity or role.
-- The approval endpoint binds an action to that session, but the server cannot independently prove a human rather than browser automation initiated the page click.
-- Receipt hashes make modification detectable within the returned chain segment; they are not signed or anchored in an independent transparency system.
-- D1 is durable application storage, not a substitute for enterprise identity, secrets management, infrastructure authorization, retention policy, or multi-region recovery.
-- The live-model suite has not run, so this repository makes no model success-rate, latency, token, or cost claim.
-
-## Ownership and AI assistance
-
-Andreas Nissen owns the project intent, architecture, requirements, evaluation criteria, risk decisions, and release decisions, and reviews every merged change. Codex assisted with implementation and documentation. AI assistance is treated as an engineering tool, not as an independent human reviewer.
-
-This is a personal demo project. Views and opinions are Andreas's own. It is not affiliated with or endorsed by his employer.
-
-See [SECURITY.md](SECURITY.md) for responsible reporting guidance.
-
-## References
-
-- [OpenAI Site tools documentation](https://learn.chatgpt.com/docs/webmcp)
-- [WebMCP explainer and specification work](https://github.com/webmachinelearning/webmcp)
-- [Chrome WebMCP documentation](https://developer.chrome.com/docs/ai/webmcp)
-- [OpenAI Responses API](https://developers.openai.com/api/reference/responses/overview/)
-- [OpenAI function calling guide](https://developers.openai.com/api/docs/guides/function-calling)
-- [Cloudflare D1 migrations](https://developers.cloudflare.com/d1/reference/migrations/)
-
-## FAQ
-
-### Does the demo change a real production system?
-
-No. Execution changes a synthetic incident fixture. The server checks approval and replay conditions, but the demo does not establish production identity, infrastructure authorization, or operational readiness.
-
-### Does a successful guided demo prove native WebMCP works?
-
-No. The labeled simulator exercises the same application control plane. Native discovery requires a compatible browser environment and confirmation that all five tools registered. No external MCP bridge is bundled or claimed as tested.
-
-### Can an agent approve an action by saying “I approve” in chat?
-
-No. Approval must be recorded through the page for the staged action and current session. The tools cannot create approval. The server checks the action, version, lifetime, and consumption state, but cannot independently prove that a human rather than browser automation clicked the page control.
-
-### Are receipts the same as AI SDLC delivery artifacts?
-
-No. Cloudflare D1 stores runtime sessions, approvals, executions, and receipts. Repository documents and pull requests record how the software was designed, checked, and reviewed. Both support inspection, with different boundaries: receipt hashes are not independently anchored, and committed delivery records are not proof that an assistant’s reasoning or every runtime action was correct.
-
-### Should I use Plan mode when contributing with the delivery skill?
-
-Use Plan mode when scope or design needs review before implementation. An execution-enabled mode can handle clear, authorized changes while following the bundled skill and repository rules. Permissions and durable documentation are separate concerns: preserve useful decisions and verification evidence in the repository or pull request, and do not infer release authority from a mode or Markdown plan.
-
-## Related writing
-
-| Read | Why it matters here |
-| --- | --- |
-| [Runbook Relay case study](https://andreasnissen.dev/projects/runbook-relay/) | Guided proof path and evidence limits |
-| [When Agents Can Use Your Software, Which Interfaces Are Worth Building?](https://andreasnissen.dev/writing/mcp-cli-webmcp-computer-use/) | Compares computer use, CLI or API, MCP, and WebMCP against this incident workflow |
-| [Why Browser Agent Governance Belongs on the Server](https://andreasnissen.dev/writing/from-browser-tool-to-governed-workflow/) | Why every interaction path shares the server policy boundary |
-| [AGENTS.md and CLAUDE.md: Shared Rules, Different Entry Points](https://andreasnissen.dev/writing/agents-md-claude-md-shared-instructions/) | Repository guidance across assistants |
-| [What Evidence Should an AI-Generated Pull Request Carry?](https://andreasnissen.dev/writing/evidence-for-ai-generated-pull-requests/) | Reviewing changes to a governed workflow |
-
-For the development workflow, see the [AI-Assisted Software Delivery series](https://andreasnissen.dev/series/ai-assisted-software-delivery/).
-
-## Delivery workflow
-
-This repository uses [AI SDLC Skill](skills/ai-sdlc-skill/README.md), an independently written adaptation of selected [Anthropic AI-native SDLC guidance](https://claude.com/blog/the-ai-native-sdlc-playbook). It preserves repository instructions and separates planning, verification evidence, review, and release authority. It is an experimental delivery aid, not a security boundary or evidence of measured productivity gains. See the [adoption guide](skills/ai-sdlc-skill/references/adoption.md) and [pilot record](docs/evidence-sdlc-pilot.md).
-
-The bundled copy is pinned to the reviewed [standalone source](https://github.com/Andreasniss/ai-sdlc-skill/tree/811c549bf772cfac6ad285faf374ca32a7e820d1). The [source manifest](skills/ai-sdlc-skill.source.json) records the exact commit and each file digest. Updates require a reviewed PR; the repository never downloads skill updates automatically.
-
-## Contributing and reuse
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, verification, and contribution expectations, [SECURITY.md](SECURITY.md) for reporting guidance, and [PRIVACY.md](PRIVACY.md) before any public upload. Install the local hooks as documented there. Keep private authoring outside public branches and PRs; intentional demo prompts, synthetic fixtures, and reviewed engineering evidence remain public.
-
-Copyright 2026 Andreas Nissen. Original project code and accompanying technical documentation are licensed under [Apache-2.0](LICENSE), except where separately indicated. See [NOTICE](NOTICE). Third-party dependencies and bundled material retain their own terms. See [third-party notices](THIRD_PARTY_NOTICES.md) for exceptions and the earlier MIT grant.
-
-This independent personal project is not affiliated with or endorsed by any provider or employer. Third-party names and marks belong to their respective owners.
+Copyright 2026 Andreas Nissen. Original code and technical documentation: [Apache-2.0](LICENSE), except where indicated. See [NOTICE](NOTICE) and [third-party notices](THIRD_PARTY_NOTICES.md), including the earlier MIT grant.
