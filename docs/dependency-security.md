@@ -10,6 +10,22 @@ The legacy loader calls esbuild's synchronous and asynchronous transform APIs. A
 
 Audit results are a dated dependency check, not proof that the whole application is vulnerability-free. Re-run `npm audit` with registry access when reviewing a new dependency revision.
 
+The separate [dependency audit workflow](../.github/workflows/dependency-audit.yml)
+checks the lockfile every Monday and on manual dispatch, including development
+dependencies. It runs without installing packages or executing their lifecycle
+scripts. Findings at low severity or above, and registry failures, fail the check;
+there are no advisory exclusions. This scheduled check leaves the required
+`quality` job unchanged. A failure reports dependencies to investigate, not proof
+that a vulnerable path is reachable in this application. The documented Satori
+renderer advisory below remains unresolved and will continue to fail the audit.
+
+[Dependabot](../.github/dependabot.yml) also proposes npm and GitHub Actions
+version updates weekly. Minor and patch releases are grouped, with three open
+npm update PRs and two Actions update PRs allowed at once. Major releases remain
+separate for review. These limits apply to version updates; security update PRs
+follow GitHub's separate limits. No update is automatically merged or excluded
+from the audit.
+
 ## Cloudflare runtime refresh — 25 October 2026
 
 The Cloudflare Vite plugin, Wrangler and Worker types are aligned at 1.65.0, 4.152.0 and 5.20261019.1. The deployment workflow uses the same Wrangler version as the package manifest. This replaces the September update's incompatible Worker-types peer and moves Miniflare's Sharp dependency to 0.35.5, which fixes [the librsvg advisory](https://github.com/advisories/GHSA-wq5f-xc86-pv6w).
