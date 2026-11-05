@@ -22,3 +22,11 @@ test("legacy Drizzle loader remains compatible with patched esbuild", async () =
   const imported = await import(`data:text/javascript;base64,${Buffer.from(esm.code).toString("base64")}`);
   assert.equal(imported.default, 42);
 });
+
+test("TypeScript ESLint keeps its named minimatch API with dotfile matching", () => {
+  const parserRequire = createRequire(require.resolve("@typescript-eslint/typescript-estree/package.json"));
+  const { minimatch } = parserRequire("minimatch");
+  assert.equal(minimatch(".config.ts", "*.ts", { dot: true }), true);
+  assert.equal(minimatch("nested/config.ts", "*.ts", { dot: true }), false);
+  assert.equal(minimatch("src/config.ts", "src/*.ts", { dot: true }), true);
+});
