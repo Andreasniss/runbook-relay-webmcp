@@ -10,10 +10,9 @@ The incident and action are synthetic. No production system is connected.
 
 1. Open the demo and select **Start guided demo**.
 2. Inspect the blocked attempt before approval.
-3. Review the staged mitigation, select **Approve staged change**, then **Execute approved change**.
-4. Inspect the decision log and saved receipt.
-
-Expected result: execution is blocked without matching approval. Repeating the same request returns its stored result without applying the action twice.
+3. Review the staged mitigation, select **Approve staged change**, then **Execute approved change**. Confirm with **Execute**.
+4. Inspect the decision log and saved receipt. **Restart demo** starts the scenario over.
+5. To see what happens on an exact retry, open [the recorded replay test (C08)](evals/control-plane/verification.json#L102-L109). The test discards the first response after the change commits, then retries the same request. The server returns the stored result (`replayed: true`), and the database still contains just one execution (`executionRows: 1`).
 
 The built-in simulator exercises the server policy. It does **not** prove native browser-agent discovery. For that path, expand **Test with your own AI agent** and confirm that all five native tools register. See [browser paths and compatibility](GUIDE.md#browser-paths).
 
